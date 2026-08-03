@@ -7,7 +7,6 @@
 
 import Foundation
 import Observation
-import SwiftUI
 import SwiftData
 
 @Observable
@@ -26,7 +25,7 @@ class CategoriesViewModel {
         categories.filter { $0.parent == nil }
     }
 
-    func getAll() async {
+    private func getAll() async {
         guard let repository else { return }
         categories = (try? await repository.fetchAll() as? [Category]) ?? []
     }

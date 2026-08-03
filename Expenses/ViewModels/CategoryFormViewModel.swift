@@ -23,7 +23,7 @@ class CategoryFormViewModel {
     var nameError: String? {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         if trimmed.isEmpty { return nil }
-        if isDuplicateName { return "A category with this name already exists." }
+        if isDuplicateName { return String(localized: "A category with this name already exists.") }
         return nil
     }
 
