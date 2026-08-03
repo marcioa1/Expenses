@@ -196,7 +196,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Editar Categoria"
+            "value" : "Alterando"
           }
         }
       }
@@ -206,7 +206,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alterar"
+            "value" : "Alterarando"
           }
         }
       }
@@ -264,7 +264,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nova Categoria"
+            "value" : "Nova"
           }
         }
       }
@@ -274,7 +274,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nova Despesa"
+            "value" : "Nova"
           }
         }
       }
