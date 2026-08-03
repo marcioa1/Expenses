@@ -15,6 +15,8 @@ class ExpensesListViewModel: MonthFilterable {
     var expenseToEdit: Expense?
     var selectedCategory: Category?
     let monthFilter = MonthFilter()
+    var  categories: [Category]?
+    private var categoryRepository: (any DataProvider)?
 
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
@@ -37,5 +39,14 @@ class ExpensesListViewModel: MonthFilterable {
         for index in offsets {
             context.delete(expenses[index])
         }
+    }
+    
+    func configure(modelContext: ModelContext) async {
+        categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
+        await getAllCategories()
+    }
+    private func getAllCategories() async {
+        guard let categoryRepository else { return }
+        categories = (try? await categoryRepository.fetchAll() as? [Category]) ?? []
     }
 }

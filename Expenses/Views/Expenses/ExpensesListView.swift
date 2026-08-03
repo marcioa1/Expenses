@@ -12,7 +12,6 @@ struct ExpensesListView: View {
     
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Expense.datetime, order: .reverse) private var expenses: [Expense]
-    @Query(sort: \Category.name) private var categories: [Category]
 
     @State private var viewModel = ExpensesListViewModel()
 
@@ -31,7 +30,7 @@ struct ExpensesListView: View {
                 Section {
                     CategoryPickerView(
                         selectedCategory: $viewModel.selectedCategory,
-                        categories: categories
+                        categories: viewModel.categories ?? []
                     )
                 }
 
@@ -76,6 +75,9 @@ struct ExpensesListView: View {
             }
             .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)
+            }
+            .task {
+                await viewModel.configure(modelContext: modelContext)
             }
         }
     }
