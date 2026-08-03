@@ -35,7 +35,7 @@ struct SummaryView: View {
             }
             .navigationTitle("Summary")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     ToolbarTotalView(
                         totalAmount: viewModel.totalAmount(from: allExpenses)
                     )
