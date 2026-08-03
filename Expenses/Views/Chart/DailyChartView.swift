@@ -48,7 +48,7 @@ struct DailyChartView: View {
             }
             .navigationTitle("Daily Spending")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarLeading) {
                     ToolbarTotalView(
                         totalAmount: viewModel.totalAmount(from: allExpenses)
                     )
