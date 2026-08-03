@@ -19,7 +19,6 @@ struct ExpenseFormView: View {
     init(expense: Expense? = nil) {
         _viewModel = State(initialValue: ExpenseFormViewModel(expense: expense))
     }
-
     var body: some View {
         @State var isSaving: Bool = false
         NavigationStack {
@@ -81,10 +80,15 @@ struct ExpenseFormView: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let context = container.mainContext
-    context.insert(Category(name: "Food", categoryIcon: "fork.knife"))
-    context.insert(Category(name: "Transport", categoryIcon: "car.fill"))
-    return ExpenseFormView()
-        .modelContainer(container)
+    struct PreviewWrapper: View {
+        var body: some View {
+            let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+            let context = container.mainContext
+            context.insert(Category(name: "Food", categoryIcon: "fork.knife"))
+            context.insert(Category(name: "Transport", categoryIcon: "car.fill"))
+            return ExpenseFormView()
+                .modelContainer(container)
+        }
+    }
+    return PreviewWrapper()
 }

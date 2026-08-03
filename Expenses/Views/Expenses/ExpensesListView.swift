@@ -15,12 +15,11 @@ struct ExpensesListView: View {
     @Query(sort: \Category.name) private var categories: [Category]
 
     @State private var viewModel = ExpensesListViewModel()
-    @Namespace private var namespace
 
     private var filteredExpenses: [Expense] {
         viewModel.filteredExpenses(from: expenses)
     }
-
+    
     var body: some View {
         NavigationStack {
             List {
@@ -71,11 +70,9 @@ struct ExpensesListView: View {
                         Image(systemName: "plus")
                     }
                 }
-                .matchedTransitionSource(id: "addExpense", in: namespace)
             }
             .sheet(isPresented: $viewModel.showingForm) {
                 ExpenseFormView()
-                    .navigationTransition(.zoom(sourceID: "addExpense", in: namespace))
             }
             .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)
