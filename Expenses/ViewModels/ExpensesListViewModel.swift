@@ -15,14 +15,17 @@ class ExpensesListViewModel: MonthFilterable {
     var expenseToEdit: Expense?
     var selectedCategory: Category?
     let monthFilter = MonthFilter()
-    var  categories: [Category]?
+    
+    var categories: [Category]?
+    var expenses: [Expense] = []
     private var categoryRepository: (any DataProvider)?
-
+    private var expenseRepository: (any DataProvider)?
+    
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
         set { monthFilter.selectedMonthIndex = newValue }
     }
-
+    
     func filteredExpenses(from allExpenses: [Expense]) -> [Expense] {
         var result = monthFilter.filteredExpenses(from: allExpenses)
         if let selectedCategory {
@@ -31,8 +34,8 @@ class ExpensesListViewModel: MonthFilterable {
         return result
     }
     
-    func totalAmount(from allExpenses: [Expense]) -> Double {
-        filteredExpenses(from: allExpenses).reduce(0) { $0 + $1.value }
+    var totalAmount: Double {
+        filteredExpenses(from: self.expenses).reduce(0) { $0 + $1.value }
     }
     
     func deleteExpenses(at offsets: IndexSet, from expenses: [Expense], in context: ModelContext) {
@@ -43,10 +46,21 @@ class ExpensesListViewModel: MonthFilterable {
     
     func configure(modelContext: ModelContext) async {
         categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
-        await getAllCategories()
+        expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.getAllCategories() }
+            group.addTask { await self.getAllExpenses() }
+        }
     }
+    
     private func getAllCategories() async {
         guard let categoryRepository else { return }
         categories = (try? await categoryRepository.fetchAll() as? [Category]) ?? []
     }
+    
+    private func getAllExpenses() async {
+        guard let expenseRepository else { return }
+        expenses = (try? await expenseRepository.fetchAll() as? [Expense]) ?? []
+    }
+
 }

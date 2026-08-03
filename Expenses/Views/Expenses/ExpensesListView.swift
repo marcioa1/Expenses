@@ -11,12 +11,10 @@ import SwiftData
 struct ExpensesListView: View {
     
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Expense.datetime, order: .reverse) private var expenses: [Expense]
-
     @State private var viewModel = ExpensesListViewModel()
 
     private var filteredExpenses: [Expense] {
-        viewModel.filteredExpenses(from: expenses)
+        viewModel.filteredExpenses(from: viewModel.expenses)
     }
     
     var body: some View {
@@ -58,7 +56,7 @@ struct ExpensesListView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     ToolbarTotalView(
-                        totalAmount: viewModel.totalAmount(from: expenses)
+                        totalAmount: viewModel.totalAmount
                     )
                 }
               
