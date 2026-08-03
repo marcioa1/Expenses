@@ -22,4 +22,15 @@ struct ExpenseLocalDataProvider: DataProvider {
         )
         return try modelContext.fetch(descriptor)
     }
+    
+    func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] {
+        let predicate = #Predicate<Expense> { expense in
+            expense.datetime >= startDate && expense.datetime <= endDate
+        }
+        let descriptor = FetchDescriptor<Expense>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.datetime, order: .reverse)]
+        )
+        return try modelContext.fetch(descriptor)
+    }
 }

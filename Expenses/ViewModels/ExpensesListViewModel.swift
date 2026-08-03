@@ -19,19 +19,19 @@ class ExpensesListViewModel: MonthFilterable {
     var categories: [Category]?
     var expenses: [Expense] = []
     private var categoryRepository: (any DataProvider)?
-    private var expenseRepository: (any DataProvider)?
+    private var expenseRepository: ExpenseLocalDataProvider?
     
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
-        set { monthFilter.selectedMonthIndex = newValue }
+        set {
+            monthFilter.selectedMonthIndex = newValue
+            Task { await self.refreshExpenses() }
+        }
     }
     
-    func filteredExpenses(from allExpenses: [Expense]) -> [Expense] {
-        var result = monthFilter.filteredExpenses(from: allExpenses)
-        if let selectedCategory {
-            result = result.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
-        }
-        return result
+    func filteredExpenses(from expenses: [Expense]) -> [Expense] {
+        guard let selectedCategory else { return expenses }
+        return expenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
     }
     
     var totalAmount: Double {
@@ -49,7 +49,7 @@ class ExpensesListViewModel: MonthFilterable {
         expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.getAllCategories() }
-            group.addTask { await self.getAllExpenses() }
+            group.addTask { await self.refreshExpenses() }
         }
     }
     
@@ -58,9 +58,11 @@ class ExpensesListViewModel: MonthFilterable {
         categories = (try? await categoryRepository.fetchAll() as? [Category]) ?? []
     }
     
-    private func getAllExpenses() async {
+    private func refreshExpenses() async {
         guard let expenseRepository else { return }
-        expenses = (try? await expenseRepository.fetchAll() as? [Expense]) ?? []
+        let start = monthFilter.monthStart()
+        let end = monthFilter.monthEnd()
+        expenses = (try? await expenseRepository.fetch(from: start, to: end)) ?? []
     }
 
 }

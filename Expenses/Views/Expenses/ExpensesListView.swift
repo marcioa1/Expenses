@@ -13,10 +13,6 @@ struct ExpensesListView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = ExpensesListViewModel()
 
-    private var filteredExpenses: [Expense] {
-        viewModel.filteredExpenses(from: viewModel.expenses)
-    }
-    
     var body: some View {
         NavigationStack {
             List {
@@ -32,7 +28,7 @@ struct ExpensesListView: View {
                     )
                 }
 
-                ForEach(filteredExpenses) { expense in
+                ForEach(viewModel.filteredExpenses()) { expense in
                     ExpenseRowView(expense: expense)
                         .onTapGesture {
                             viewModel.expenseToEdit = expense
@@ -40,11 +36,11 @@ struct ExpensesListView: View {
                         
                 }
                 .onDelete { offsets in
-                    viewModel.deleteExpenses(at: offsets, from: filteredExpenses, in: modelContext)
+                    viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)
                 }
             }
             .overlay {
-                if filteredExpenses.isEmpty {
+                if viewModel.filteredExpenses().isEmpty {
                     ContentUnavailableView(
                         "No Expenses",
                         systemImage: "creditcard",
