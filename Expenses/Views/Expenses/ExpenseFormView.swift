@@ -59,7 +59,7 @@ struct ExpenseFormView: View {
                     Button {
                         isSaving = true
                         Task {
-                            try? await Task.sleep(for: .seconds(4))
+                            try? await Task.sleep(for: .seconds(2))
                         }
                         viewModel.save(in: modelContext)
                         isSaving = false
@@ -73,7 +73,6 @@ struct ExpenseFormView: View {
                                 }
                             }
                     }
-                    .buttonStyle(.bordered)
                     .disabled(!viewModel.canSave || isSaving)
                 }
             }

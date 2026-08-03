@@ -9,11 +9,13 @@ import SwiftUI
 import SwiftData
 
 struct ExpensesListView: View {
+    
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Expense.datetime, order: .reverse) private var expenses: [Expense]
     @Query(sort: \Category.name) private var categories: [Category]
 
     @State private var viewModel = ExpensesListViewModel()
+    @Namespace private var namespace
 
     private var filteredExpenses: [Expense] {
         viewModel.filteredExpenses(from: expenses)
@@ -28,13 +30,10 @@ struct ExpensesListView: View {
                 )
 
                 Section {
-                    Picker("Category", selection: $viewModel.selectedCategory) {
-                        Text("All").tag(nil as Category?)
-                        ForEach(categories.filter{ $0.isActive }) { category in
-                            Label(category.name, systemImage: category.categoryIcon)
-                                .tag(category as Category?)
-                        }
-                    }
+                    CategoryPickerView(
+                        selectedCategory: $viewModel.selectedCategory,
+                        categories: categories
+                    )
                 }
 
                 ForEach(filteredExpenses) { expense in
@@ -42,6 +41,7 @@ struct ExpensesListView: View {
                         .onTapGesture {
                             viewModel.expenseToEdit = expense
                         }
+                        
                 }
                 .onDelete { offsets in
                     viewModel.deleteExpenses(at: offsets, from: filteredExpenses, in: modelContext)
@@ -71,9 +71,11 @@ struct ExpensesListView: View {
                         Image(systemName: "plus")
                     }
                 }
+                .matchedTransitionSource(id: "addExpense", in: namespace)
             }
             .sheet(isPresented: $viewModel.showingForm) {
                 ExpenseFormView()
+                    .navigationTransition(.zoom(sourceID: "addExpense", in: namespace))
             }
             .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)
