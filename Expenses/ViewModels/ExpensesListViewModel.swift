@@ -29,7 +29,7 @@ class ExpensesListViewModel: MonthFilterable {
         }
     }
     
-    func filteredExpenses(from expenses: [Expense]) -> [Expense] {
+    func filteredExpenses() -> [Expense] {
         guard let selectedCategory else { return expenses }
         return expenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
     }
