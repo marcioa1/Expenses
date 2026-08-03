@@ -8,11 +8,21 @@
 import SwiftUI
 import SwiftData
 
+private struct PlaceholderDataProvider: DataProvider {
+    typealias Item = Category
+    func fetchAll() async throws -> [Category] { [] }
+}
+
 struct CategoriesView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Category.name) private var allCategories: [Category]
 
-    @State private var viewModel = CategoriesViewModel()
+//    @Query(sort: \Category.name) private var allCategories: [Category]
+
+    @State private var viewModel: CategoriesViewModel
+
+    init() {
+        _viewModel = State(initialValue: CategoriesViewModel(repository: PlaceholderDataProvider()))
+    }
 
     private let columns = [
         GridItem(.flexible()),
@@ -23,10 +33,14 @@ struct CategoriesView: View {
         NavigationStack {
             ScrollView {
                 CategoryGridView(
-                    categories: viewModel.rootCategories(from: allCategories),
+                    categories: viewModel.rootCategories(),
                     columns: columns,
                     onEdit: { category in viewModel.categoryToEdit = category }
                 )
+            }
+            .task {
+                viewModel = CategoriesViewModel(repository: CategoryLocalDataProvider(modelContext: modelContext))
+                await viewModel.getAll()
             }
             .navigationTitle("Categories")
             .toolbar {
@@ -110,16 +124,11 @@ struct SubcategoriesView: View {
 #Preview {
     let container = try! ModelContainer(for: Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     let context = container.mainContext
-    let sampleCategories = [
-        Category(name: "Food", categoryIcon: "fork.knife"),
-        Category(name: "Transport", categoryIcon: "car.fill"),
-        Category(name: "Entertainment", categoryIcon: "gamecontroller.fill"),
-        Category(name: "Health", categoryIcon: "heart.fill"),
-        Category(name: "Shopping", categoryIcon: "bag.fill"),
-    ]
-    for category in sampleCategories {
-        context.insert(category)
-    }
+    context.insert(Category(name: "Food", categoryIcon: "fork.knife"))
+    context.insert(Category(name: "Transport", categoryIcon: "car.fill"))
+    context.insert(Category(name: "Entertainment", categoryIcon: "gamecontroller.fill"))
+    context.insert(Category(name: "Health", categoryIcon: "heart.fill"))
+    context.insert(Category(name: "Shopping", categoryIcon: "bag.fill"))
     return CategoriesView()
         .modelContainer(container)
 }

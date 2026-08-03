@@ -7,13 +7,25 @@
 
 import Foundation
 import Observation
+import SwiftUI
+import SwiftData
 
 @Observable
 class CategoriesViewModel {
     var showingForm = false
     var categoryToEdit: Category?
+    let repository: any DataProvider
+    var categories: [Category] = []
 
-    func rootCategories(from allCategories: [Category]) -> [Category] {
-        allCategories.filter { $0.parent == nil }
+    init(repository: any DataProvider) {
+        self.repository = repository
+    }
+
+    func rootCategories() -> [Category] {
+        categories.filter { $0.parent == nil }
+    }
+    
+    func getAll() async {
+        categories = try! await repository.fetchAll() as! [Category]
     }
 }

@@ -15,13 +15,10 @@ struct CategoryLocalDataProvider: DataProvider {
         self.modelContext = modelContext
     }
     
-    func getAll() async throws -> [Category] {
+    func fetchAll() async throws -> [Category] {
         let descriptor = FetchDescriptor<Category>(
             sortBy: [SortDescriptor(\.name)]
         )
         return try modelContext.fetch(descriptor)
     }
-    }
-    
-    
 }

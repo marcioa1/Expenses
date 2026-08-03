@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Category {
+final class Category: Identifiable {
     var id: UUID = UUID()
     @Attribute(.unique) var name: String
     var isActive: Bool
