@@ -39,6 +39,9 @@ struct ExpensesApp: App {
                 Tab("Chart", systemImage: "chart.bar.fill") {
                     DailyChartView()
                 }
+                Tab("Grid", systemImage: "tablecells") {
+                    MonthlyGridView()
+                }
             }
             .tint(.orange)
         }
