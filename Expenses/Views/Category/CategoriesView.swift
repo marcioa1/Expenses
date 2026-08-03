@@ -8,21 +8,9 @@
 import SwiftUI
 import SwiftData
 
-private struct PlaceholderDataProvider: DataProvider {
-    typealias Item = Category
-    func fetchAll() async throws -> [Category] { [] }
-}
-
 struct CategoriesView: View {
     @Environment(\.modelContext) private var modelContext
-
-//    @Query(sort: \Category.name) private var allCategories: [Category]
-
-    @State private var viewModel: CategoriesViewModel
-
-    init() {
-        _viewModel = State(initialValue: CategoriesViewModel(repository: PlaceholderDataProvider()))
-    }
+    @State private var viewModel = CategoriesViewModel()
 
     private let columns = [
         GridItem(.flexible()),
@@ -39,8 +27,7 @@ struct CategoriesView: View {
                 )
             }
             .task {
-                viewModel = CategoriesViewModel(repository: CategoryLocalDataProvider(modelContext: modelContext))
-                await viewModel.getAll()
+                await viewModel.configure(modelContext: modelContext)
             }
             .navigationTitle("Categories")
             .toolbar {

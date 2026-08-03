@@ -14,18 +14,20 @@ import SwiftData
 class CategoriesViewModel {
     var showingForm = false
     var categoryToEdit: Category?
-    let repository: any DataProvider
     var categories: [Category] = []
+    private var repository: (any DataProvider)?
 
-    init(repository: any DataProvider) {
-        self.repository = repository
+    func configure(modelContext: ModelContext) async {
+        repository = CategoryLocalDataProvider(modelContext: modelContext)
+        await getAll()
     }
 
     func rootCategories() -> [Category] {
         categories.filter { $0.parent == nil }
     }
-    
+
     func getAll() async {
-        categories = try! await repository.fetchAll() as! [Category]
+        guard let repository else { return }
+        categories = (try? await repository.fetchAll() as? [Category]) ?? []
     }
 }
