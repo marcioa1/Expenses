@@ -14,7 +14,9 @@ class ExpensesListViewModel: MonthFilterable {
     var showingForm = false
     var expenseToEdit: Expense?
     var selectedCategory: Category?
+    var selectedSort: SortOption = .date
     let monthFilter = MonthFilter()
+    var loadingState: LoadingState = .loading
     
     var categories: [Category]?
     var expenses: [Expense] = []
@@ -25,17 +27,26 @@ class ExpensesListViewModel: MonthFilterable {
         get { monthFilter.selectedMonthIndex }
         set {
             monthFilter.selectedMonthIndex = newValue
+            loadingState = .loading
             Task { await self.refreshExpenses() }
         }
     }
     
     func filteredExpenses() -> [Expense] {
-        guard let selectedCategory else { return expenses }
-        return expenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
+        var result = expenses
+        if let selectedCategory {
+            result = result.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
+        }
+        switch selectedSort {
+        case .date:
+            return result.sorted { $0.datetime > $1.datetime }
+        case .value:
+            return result.sorted { $0.value > $1.value }
+        }
     }
     
     var totalAmount: Double {
-        filteredExpenses(from: self.expenses).reduce(0) { $0 + $1.value }
+        filteredExpenses().reduce(0) { $0 + $1.value }
     }
     
     func deleteExpenses(at offsets: IndexSet, from expenses: [Expense], in context: ModelContext) {
@@ -51,18 +62,31 @@ class ExpensesListViewModel: MonthFilterable {
             group.addTask { await self.getAllCategories() }
             group.addTask { await self.refreshExpenses() }
         }
+        if loadingState != .failed {
+            loadingState = .success
+        }
     }
     
     private func getAllCategories() async {
         guard let categoryRepository else { return }
-        categories = (try? await categoryRepository.fetchAll() as? [Category]) ?? []
+        do {
+            categories = try await categoryRepository.fetchAll() as? [Category]
+        } catch {
+            loadingState = .failed
+        }
     }
     
     private func refreshExpenses() async {
+        try? await Task.sleep(for: .seconds(1))
         guard let expenseRepository else { return }
         let start = monthFilter.monthStart()
         let end = monthFilter.monthEnd()
-        expenses = (try? await expenseRepository.fetch(from: start, to: end)) ?? []
+        do {
+            expenses = try await expenseRepository.fetch(from: start, to: end)
+            loadingState = .success
+        } catch {
+            loadingState = .failed
+        }
     }
 
 }

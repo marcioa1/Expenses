@@ -12,40 +12,41 @@ struct ExpensesListView: View {
     
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = ExpensesListViewModel()
-
+    
     var body: some View {
         NavigationStack {
-            List {
+            VStack(spacing: 0) {
                 MonthCarouselView(
                     monthOffsets: viewModel.monthOffsets,
                     selectedMonthIndex: $viewModel.selectedMonthIndex
                 )
-
-                Section {
-                    CategoryPickerView(
-                        selectedCategory: $viewModel.selectedCategory,
-                        categories: viewModel.categories ?? []
-                    )
-                }
-
-                ForEach(viewModel.filteredExpenses()) { expense in
-                    ExpenseRowView(expense: expense)
-                        .onTapGesture {
-                            viewModel.expenseToEdit = expense
+                
+                FilterView(
+                    selectedSort: $viewModel.selectedSort,
+                    selectedCategory: $viewModel.selectedCategory,
+                    categories: viewModel.categories ?? []
+                )
+                .padding(16)
+                
+                switch viewModel.loadingState {
+                case .loading:
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .failed:
+                    Text("deu ruim")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .success:
+                    List {
+                        ForEach(viewModel.filteredExpenses()) { expense in
+                            ExpenseRowView(expense: expense)
+                                .onTapGesture {
+                                    viewModel.expenseToEdit = expense
+                                }
                         }
-                        
-                }
-                .onDelete { offsets in
-                    viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)
-                }
-            }
-            .overlay {
-                if viewModel.filteredExpenses().isEmpty {
-                    ContentUnavailableView(
-                        "No Expenses",
-                        systemImage: "creditcard",
-                        description: Text("Add your first expense to get started.")
-                    )
+                        .onDelete { offsets in
+                            viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)
+                        }
+                    }
                 }
             }
             .navigationTitle("Expenses")
@@ -55,7 +56,7 @@ struct ExpensesListView: View {
                         totalAmount: viewModel.totalAmount
                     )
                 }
-              
+                
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         viewModel.showingForm = true
@@ -70,9 +71,9 @@ struct ExpensesListView: View {
             .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)
             }
-            .task {
-                await viewModel.configure(modelContext: modelContext)
-            }
+        }
+        .task {
+            await viewModel.configure(modelContext: modelContext)
         }
     }
 }

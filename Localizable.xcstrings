@@ -34,6 +34,7 @@
       }
     },
     "Add your first expense to get started." : {
+      "extractionState" : "stale",
       "localizations" : {
         "pt-BR" : {
           "stringUnit" : {
@@ -191,6 +192,9 @@
         }
       }
     },
+    "deu ruim" : {
+
+    },
     "Edit Category" : {
       "localizations" : {
         "pt-BR" : {
@@ -280,6 +284,7 @@
       }
     },
     "No Expenses" : {
+      "extractionState" : "stale",
       "localizations" : {
         "pt-BR" : {
           "stringUnit" : {
@@ -358,6 +363,9 @@
           }
         }
       }
+    },
+    "Sort by" : {
+
     },
     "Subcategories" : {
       "localizations" : {
