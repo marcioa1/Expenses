@@ -34,7 +34,6 @@
       }
     },
     "Add your first expense to get started." : {
-      "extractionState" : "stale",
       "localizations" : {
         "pt-BR" : {
           "stringUnit" : {
@@ -284,7 +283,6 @@
       }
     },
     "No Expenses" : {
-      "extractionState" : "stale",
       "localizations" : {
         "pt-BR" : {
           "stringUnit" : {
