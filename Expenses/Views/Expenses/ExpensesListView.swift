@@ -36,17 +36,7 @@ struct ExpensesListView: View {
                     Text("deu ruim")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .success:
-                    List {
-                        ForEach(viewModel.filteredExpenses()) { expense in
-                            ExpenseRowView(expense: expense)
-                                .onTapGesture {
-                                    viewModel.expenseToEdit = expense
-                                }
-                        }
-                        .onDelete { offsets in
-                            viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)
-                        }
-                    }
+                    expenseList
                 }
             }
             .navigationTitle("Expenses")
@@ -78,6 +68,30 @@ struct ExpensesListView: View {
         }
         .task {
             await viewModel.configure(modelContext: modelContext)
+        }
+    }
+    
+    @ViewBuilder
+    private var expenseList: some View {
+        List {
+            ForEach(viewModel.filteredExpenses()) { expense in
+                ExpenseRowView(expense: expense)
+                    .onTapGesture {
+                        viewModel.expenseToEdit = expense
+                    }
+            }
+            .onDelete { offsets in
+                viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)
+            }
+        }
+        .overlay {
+            if viewModel.expenses.isEmpty {
+                ContentUnavailableView(
+                    "No Expenses",
+                    systemImage: "creditcard",
+                    description: Text("Add your first expense to get started.")
+                )
+            }
         }
     }
 }
