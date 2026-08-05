@@ -76,7 +76,7 @@ class ExpensesListViewModel: MonthFilterable {
         }
     }
     
-    private func refreshExpenses() async {
+    func refreshExpenses() async {
         try? await Task.sleep(for: .seconds(1))
         guard let expenseRepository else { return }
         let start = monthFilter.monthStart()

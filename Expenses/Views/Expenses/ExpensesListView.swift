@@ -65,10 +65,14 @@ struct ExpensesListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $viewModel.showingForm) {
+            .sheet(isPresented: $viewModel.showingForm, onDismiss: {
+                Task { await viewModel.refreshExpenses() }
+            }) {
                 ExpenseFormView()
             }
-            .sheet(item: $viewModel.expenseToEdit) { expense in
+            .sheet(item: $viewModel.expenseToEdit, onDismiss: {
+                Task { await viewModel.refreshExpenses() }
+            }) { expense in
                 ExpenseFormView(expense: expense)
             }
         }
