@@ -9,41 +9,58 @@ import SwiftUI
 import SwiftData
 
 struct SummaryView: View {
-    @Query(sort: \Expense.datetime, order: .reverse) private var allExpenses: [Expense]
-    @Query(sort: \Category.name) private var categories: [Category]
-
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = SummaryViewModel()
-
+    
     var body: some View {
         NavigationStack {
-            List {
+            VStack(spacing: 0) {
                 MonthCarouselView(
                     monthOffsets: viewModel.monthOffsets,
                     selectedMonthIndex: $viewModel.selectedMonthIndex
                 )
-
-                CategoryBreakdownView(
-                    expensesByParent: viewModel.expensesByParent(from: allExpenses, categories: categories),
-                    totalAmount: viewModel.totalAmount(from: allExpenses),
-                    currencyCode: CurrencyHelper.code
-                )
-
-                RecentExpensesView(
-                    expenses: Array(viewModel.filteredExpenses(from: allExpenses).prefix(7)),
-                    expenseToEdit: $viewModel.expenseToEdit
-                )
+                switch viewModel.loadingState {
+                case .loading:
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .failed:
+                    Text("deu ruim")
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .success:
+                    
+                    successContent
+                    
+                }
             }
             .navigationTitle("Summary")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     ToolbarTotalView(
-                        totalAmount: viewModel.totalAmount(from: allExpenses)
+                        totalAmount: viewModel.totalAmount(from: viewModel.expenses)
                     )
                 }
             }
             .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)
             }
+            .task {
+                await viewModel.configure(modelContext: modelContext)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var successContent: some View {
+        List {
+            CategoryBreakdownView(
+                expensesByParent: viewModel.expensesByParent(),
+                totalAmount: viewModel.totalAmount(from: viewModel.expenses),
+                currencyCode: CurrencyHelper.code
+            )
+            RecentExpensesView(
+                expenses: Array(viewModel.filteredExpenses(from: viewModel.expenses).prefix(7)),
+                expenseToEdit: $viewModel.expenseToEdit
+            )
         }
     }
 }
