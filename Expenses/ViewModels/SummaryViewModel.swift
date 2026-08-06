@@ -19,7 +19,12 @@ class SummaryViewModel: MonthFilterable {
     var expenses: [Expense] = []
     var loadingState: LoadingState = .loading
     
+    init(previewState: LoadingState = .loading) {
+        loadingState = previewState
+    }
+
     func configure(modelContext: ModelContext) async {
+        guard loadingState == .loading else { return }
         categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
         expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
         await withTaskGroup(of: Void.self) { group in

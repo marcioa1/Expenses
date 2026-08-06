@@ -11,6 +11,10 @@ import SwiftData
 struct SummaryView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = SummaryViewModel()
+
+    init(viewModel: SummaryViewModel = SummaryViewModel()) {
+        _viewModel = State(initialValue: viewModel)
+    }
     
     var body: some View {
         NavigationStack {
@@ -27,9 +31,7 @@ struct SummaryView: View {
                     Text("deu ruim")
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .success:
-                    
                     successContent
-                    
                 }
             }
             .navigationTitle("Summary")
@@ -65,7 +67,12 @@ struct SummaryView: View {
     }
 }
 
-#Preview {
+#Preview("Error") {
+    SummaryView(viewModel: SummaryViewModel(previewState: .failed))
+        .modelContainer(for: [Expense.self, Category.self], inMemory: true)
+}
+
+#Preview("Success") {
     let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     let context = container.mainContext
     let food = Category(name: "Food", categoryIcon: "fork.knife")
