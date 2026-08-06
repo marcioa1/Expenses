@@ -28,8 +28,7 @@ struct SummaryView: View {
                     ProgressView()
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 case .failed:
-                    Text("deu ruim")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    ErrorView()
                 case .success:
                     successContent
                 }
