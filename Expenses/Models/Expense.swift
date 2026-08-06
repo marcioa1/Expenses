@@ -9,7 +9,7 @@ import Foundation
 import SwiftData
 
 @Model
-final class Expense {
+final class Expense: Identifiable {
     var id: UUID = UUID()
     var category: Category
     var details: String?
