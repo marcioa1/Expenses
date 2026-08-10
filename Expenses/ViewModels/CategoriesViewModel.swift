@@ -21,6 +21,11 @@ class CategoriesViewModel {
         await getAll()
     }
 
+    func configure(with repository: any DataProvider) async {
+        self.repository = repository
+        await getAll()
+    }
+
     func rootCategories() -> [Category] {
         categories.filter { $0.parent == nil }
     }
