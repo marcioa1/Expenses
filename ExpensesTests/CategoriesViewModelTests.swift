@@ -76,20 +76,3 @@ struct CategoriesViewModelTests {
         #expect(roots.count == 2)
     }
 }
-
-// MARK: - Mock
-
-@MainActor
-private final class MockCategoryDataProvider: DataProvider {
-    typealias Item = Category
-
-    private let categories: [Category]
-
-    init(categories: [Category]) {
-        self.categories = categories
-    }
-
-    func fetchAll() async throws -> [Category] {
-        categories
-    }
-}

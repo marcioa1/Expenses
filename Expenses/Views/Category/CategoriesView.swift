@@ -11,6 +11,11 @@ import SwiftData
 struct CategoriesView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = CategoriesViewModel()
+    private let dataProvider: (any DataProvider)?
+
+    init(dataProvider: (any DataProvider)? = nil) {
+        self.dataProvider = dataProvider
+    }
 
     private let columns = [
         GridItem(.flexible()),
@@ -27,7 +32,11 @@ struct CategoriesView: View {
                 )
             }
             .task {
-                await viewModel.configure(modelContext: modelContext)
+                if let dataProvider {
+                    await viewModel.configure(with: dataProvider)
+                } else {
+                    await viewModel.configure(modelContext: modelContext)
+                }
             }
             .navigationTitle("Categories")
             .toolbar {
@@ -108,14 +117,8 @@ struct SubcategoriesView: View {
     }
 }
 
+#if DEBUG
 #Preview {
-    let container = try! ModelContainer(for: Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let context = container.mainContext
-    context.insert(Category(name: "Food", categoryIcon: "fork.knife"))
-    context.insert(Category(name: "Transport", categoryIcon: "car.fill"))
-    context.insert(Category(name: "Entertainment", categoryIcon: "gamecontroller.fill"))
-    context.insert(Category(name: "Health", categoryIcon: "heart.fill"))
-    context.insert(Category(name: "Shopping", categoryIcon: "bag.fill"))
-    return CategoriesView()
-        .modelContainer(container)
+    CategoriesView(dataProvider: MockCategoryDataProvider())
 }
+#endif
