@@ -9,19 +9,23 @@ import SwiftUI
 import SwiftData
 
 struct MonthlyGridView: View {
-    @Query(sort: \Expense.datetime, order: .reverse) private var expenses: [Expense]
-    @Query(sort: \Category.name) private var categories: [Category]
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = MonthlyGridViewModel()
-    @State private var selectedCategory: Category?
-
-    private var filteredExpenses: [Expense] {
-        guard let selectedCategory else { return expenses }
-        return expenses.filter { $0.category == selectedCategory }
-    }
 
     var body: some View {
-        let maxTotal = viewModel.maxTotal(from: filteredExpenses)
+        let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
         NavigationStack {
+            HStack {
+                Spacer()
+                
+                CategoryPickerView(
+                    selectedCategory: $viewModel.selectedCategory,
+                    categories:
+                        viewModel.categories ?? []
+                )
+                .pickerStyle(.menu)
+                .padding(16)
+            }
             ScrollView {
                 Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
                     headerRow
@@ -42,15 +46,9 @@ struct MonthlyGridView: View {
                 .padding()
             }
             .navigationTitle("Monthly Overview")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    CategoryPickerView(
-                        selectedCategory: $selectedCategory,
-                        categories: categories
-                    )
-                    .pickerStyle(.menu)
-                }
-            }
+        }
+        .task {
+            await viewModel.configure(modelContext: modelContext)
         }
     }
 
@@ -76,7 +74,7 @@ struct MonthlyGridView: View {
             Color.clear
                 .frame(maxWidth: .infinity, minHeight: 36)
         } else {
-            let amount = viewModel.accumulated(through: day, in: month, from: filteredExpenses)
+            let amount = viewModel.accumulated(through: day, in: month, from: viewModel.filteredExpenses)
             let intensity = amount.map { $0 / maxTotal } ?? 0
 
             ZStack {
