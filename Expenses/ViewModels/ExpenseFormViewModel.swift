@@ -15,8 +15,10 @@ class ExpenseFormViewModel {
     var details: String = ""
     var value: Double?
     var datetime: Date = .now
+    var categories: [Category] = []
 
     let expense: Expense?
+    private var repository: (any DataProvider)?
 
     var isEditing: Bool { expense != nil }
 
@@ -24,7 +26,17 @@ class ExpenseFormViewModel {
         selectedCategory != nil && value != nil && value! > 0
     }
 
-    func leafCategories(from categories: [Category]) -> [Category] {
+    func configure(modelContext: ModelContext) async {
+        repository = CategoryLocalDataProvider(modelContext: modelContext)
+        await fetchCategories()
+    }
+
+    func configure(with repository: any DataProvider) async {
+        self.repository = repository
+        await fetchCategories()
+    }
+
+    func leafCategories() -> [Category] {
         categories.filter { $0.subcategories.isEmpty }
     }
 
@@ -55,5 +67,11 @@ class ExpenseFormViewModel {
             )
             context.insert(newExpense)
         }
+    }
+
+    private func fetchCategories() async {
+        guard let repository else { return }
+        let fetched = (try? await repository.fetchAll() as? [Category]) ?? []
+        categories = fetched.sorted { $0.name < $1.name }
     }
 }

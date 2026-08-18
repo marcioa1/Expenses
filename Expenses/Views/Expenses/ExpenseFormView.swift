@@ -12,8 +12,6 @@ struct ExpenseFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @Query(sort: \Category.name) private var categories: [Category]
-
     @State private var viewModel: ExpenseFormViewModel
 
     init(expense: Expense? = nil) {
@@ -26,7 +24,7 @@ struct ExpenseFormView: View {
                 Section("Category") {
                     Picker("Category", selection: $viewModel.selectedCategory) {
                         Text("Select a category").tag(nil as Category?)
-                        ForEach(viewModel.leafCategories(from: categories)) { category in
+                        ForEach(viewModel.leafCategories()) { category in
                             Label(category.name, systemImage: category.categoryIcon)
                                 .tag(category as Category?)
                         }
@@ -74,6 +72,9 @@ struct ExpenseFormView: View {
                     }
                     .disabled(!viewModel.canSave || isSaving)
                 }
+            }
+            .task {
+                await viewModel.configure(modelContext: modelContext)
             }
         }
     }
