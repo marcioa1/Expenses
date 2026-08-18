@@ -13,6 +13,7 @@ struct ExpenseFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: ExpenseFormViewModel
+    @FocusState private var isValueFocused: Bool
 
     init(expense: Expense? = nil) {
         _viewModel = State(initialValue: ExpenseFormViewModel(expense: expense))
@@ -29,11 +30,15 @@ struct ExpenseFormView: View {
                                 .tag(category as Category?)
                         }
                     }
+                    .onChange(of: viewModel.selectedCategory) { _, _ in
+                        isValueFocused = true
+                    }
                 }
 
                 Section("Value") {
                     TextField("Amount", value: $viewModel.value, format: .currency(code: CurrencyHelper.code))
                         .keyboardType(.decimalPad)
+                        .focused($isValueFocused)
                 }
 
                 Section("Details") {
