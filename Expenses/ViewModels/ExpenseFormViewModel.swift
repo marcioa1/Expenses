@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import Observation
+import MapKit
 
 @Observable
 class ExpenseFormViewModel {
@@ -16,9 +17,13 @@ class ExpenseFormViewModel {
     var value: Double?
     var datetime: Date = .now
     var categories: [Category] = []
+    var locationName: String = ""
+    var latitude: Double?
+    var longitude: Double?
 
     let expense: Expense?
     private var repository: (any DataProvider)?
+    private let locationManager = LocationManager()
 
     var isEditing: Bool { expense != nil }
 
@@ -47,23 +52,41 @@ class ExpenseFormViewModel {
             self.details = expense.details ?? ""
             self.value = expense.value
             self.datetime = expense.datetime
+            self.locationName = expense.locationName ?? ""
+            self.latitude = expense.latitude
+            self.longitude = expense.longitude
+        }
+        if !self.isEditing {
+            Task {
+                let poi = await self.locationManager.getPOI()
+                self.latitude = poi?.coordinate.latitude
+                self.longitude = poi?.coordinate.longitude
+                self.locationName = poi?.name ?? ""
+            }
         }
     }
 
     func save(in context: ModelContext) {
         guard let selectedCategory, let value else { return }
         let trimmedDetails = details.trimmingCharacters(in: .whitespaces)
+        let trimmedLocation = locationName.trimmingCharacters(in: .whitespaces)
         if let expense {
             expense.category = selectedCategory
             expense.details = trimmedDetails.isEmpty ? nil : trimmedDetails
             expense.value = value
             expense.datetime = datetime
+            expense.locationName = trimmedLocation.isEmpty ? nil : trimmedLocation
+            expense.latitude = latitude
+            expense.longitude = longitude
         } else {
             let newExpense = Expense(
                 category: selectedCategory,
                 details: trimmedDetails.isEmpty ? nil : trimmedDetails,
                 value: value,
-                datetime: datetime
+                datetime: datetime,
+                latitude: latitude,
+                longitude: longitude,
+                locationName: trimmedLocation.isEmpty ? nil : trimmedLocation
             )
             context.insert(newExpense)
         }
@@ -74,4 +97,6 @@ class ExpenseFormViewModel {
         let fetched = (try? await repository.fetchAll() as? [Category]) ?? []
         categories = fetched.sorted { $0.name < $1.name }
     }
+    
+    
 }

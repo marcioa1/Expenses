@@ -76,6 +76,16 @@ class ExpensesListViewModel: MonthFilterable {
         }
     }
     
+    func latestCategory(forLocationName locationName: String) async -> Category? {
+        if let category = expenses
+            .filter({ $0.locationName == locationName })
+            .sorted(by: { $0.datetime > $1.datetime })
+            .first?.category {
+            return category
+        }
+        return try? expenseRepository?.latestCategory(forLocationName: locationName)
+    }
+
     func refreshExpenses() async {
         try? await Task.sleep(for: .seconds(1))
         guard let expenseRepository else { return }

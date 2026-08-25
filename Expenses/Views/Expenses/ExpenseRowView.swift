@@ -29,6 +29,12 @@ struct ExpenseRowView: View {
                 Text(expense.datetime, format: .dateTime.day().month().year().hour().minute())
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                if let locationName = expense.locationName {
+                    Label(locationName, systemImage: "mappin.and.ellipse")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
 
             Spacer()

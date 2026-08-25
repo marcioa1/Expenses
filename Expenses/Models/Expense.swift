@@ -15,12 +15,18 @@ final class Expense: Identifiable {
     var details: String?
     var value: Double
     var datetime: Date
+    var latitude: Double?
+    var longitude: Double?
+    var locationName: String?
 
-    init(id: UUID = UUID(), category: Category, details: String? = nil, value: Double, datetime: Date = .now) {
+    init(id: UUID = UUID(), category: Category, details: String? = nil, value: Double, datetime: Date = .now, latitude: Double? = nil, longitude: Double? = nil, locationName: String? = nil) {
         self.id = id
         self.category = category
         self.details = details
         self.value = value
         self.datetime = datetime
+        self.latitude = latitude
+        self.longitude = longitude
+        self.locationName = locationName
     }
 }

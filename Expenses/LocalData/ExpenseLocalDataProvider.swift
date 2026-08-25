@@ -33,4 +33,16 @@ struct ExpenseLocalDataProvider: DataProvider {
         )
         return try modelContext.fetch(descriptor)
     }
+
+    func latestCategory(forLocationName locationName: String) throws -> Category? {
+        let predicate = #Predicate<Expense> { expense in
+            expense.locationName == locationName
+        }
+        var descriptor = FetchDescriptor<Expense>(
+            predicate: predicate,
+            sortBy: [SortDescriptor(\.datetime, order: .reverse)]
+        )
+        descriptor.fetchLimit = 1
+        return try modelContext.fetch(descriptor).first?.category
+    }
 }

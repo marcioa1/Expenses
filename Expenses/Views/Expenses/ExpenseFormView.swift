@@ -18,6 +18,7 @@ struct ExpenseFormView: View {
     init(expense: Expense? = nil) {
         _viewModel = State(initialValue: ExpenseFormViewModel(expense: expense))
     }
+
     var body: some View {
         @State var isSaving: Bool = false
         NavigationStack {
@@ -47,6 +48,10 @@ struct ExpenseFormView: View {
 
                 Section("Date & Time") {
                     DatePicker("Date", selection: $viewModel.datetime)
+                }
+
+                Section("Location") {
+                    TextField("Location (optional)", text: $viewModel.locationName)
                 }
             }
             .navigationTitle(viewModel.isEditing ? "Edit Expense" : "New Expense")
