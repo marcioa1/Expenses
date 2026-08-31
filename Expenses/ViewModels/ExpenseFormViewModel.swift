@@ -23,6 +23,7 @@ class ExpenseFormViewModel {
 
     let expense: Expense?
     private var repository: (any DataProvider)?
+    private var expenseRepository: ExpenseLocalDataProvider?
     private let locationManager = LocationManager()
 
     var isEditing: Bool { expense != nil }
@@ -33,7 +34,11 @@ class ExpenseFormViewModel {
 
     func configure(modelContext: ModelContext) async {
         repository = CategoryLocalDataProvider(modelContext: modelContext)
+        expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
         await fetchCategories()
+        if !isEditing {
+            await resolveLocation()
+        }
     }
 
     func configure(with repository: any DataProvider) async {
@@ -55,14 +60,6 @@ class ExpenseFormViewModel {
             self.locationName = expense.locationName ?? ""
             self.latitude = expense.latitude
             self.longitude = expense.longitude
-        }
-        if !self.isEditing {
-            Task {
-                let poi = await self.locationManager.getPOI()
-                self.latitude = poi?.coordinate.latitude
-                self.longitude = poi?.coordinate.longitude
-                self.locationName = poi?.name ?? ""
-            }
         }
     }
 
@@ -92,11 +89,20 @@ class ExpenseFormViewModel {
         }
     }
 
+    private func resolveLocation() async {
+        let poi = await locationManager.getPOI()
+        latitude = poi?.coordinate.latitude
+        longitude = poi?.coordinate.longitude
+        let name = poi?.name ?? ""
+        locationName = name
+        if !name.isEmpty {
+            selectedCategory = try? expenseRepository?.latestCategory(forLocationName: name)
+        }
+    }
+
     private func fetchCategories() async {
         guard let repository else { return }
         let fetched = (try? await repository.fetchAll() as? [Category]) ?? []
         categories = fetched.sorted { $0.name < $1.name }
     }
-    
-    
 }
