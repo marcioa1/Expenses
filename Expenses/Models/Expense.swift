@@ -18,8 +18,9 @@ final class Expense: Identifiable {
     var latitude: Double?
     var longitude: Double?
     var locationName: String?
+    var extraordinary: Bool = false
 
-    init(id: UUID = UUID(), category: Category, details: String? = nil, value: Double, datetime: Date = .now, latitude: Double? = nil, longitude: Double? = nil, locationName: String? = nil) {
+    init(id: UUID = UUID(), category: Category, details: String? = nil, value: Double, datetime: Date = .now, latitude: Double? = nil, longitude: Double? = nil, locationName: String? = nil, extraordinary: Bool = false) {
         self.id = id
         self.category = category
         self.details = details
@@ -28,5 +29,6 @@ final class Expense: Identifiable {
         self.latitude = latitude
         self.longitude = longitude
         self.locationName = locationName
+        self.extraordinary = extraordinary
     }
 }
