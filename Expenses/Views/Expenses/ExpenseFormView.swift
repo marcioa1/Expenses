@@ -42,16 +42,14 @@ struct ExpenseFormView: View {
                         .focused($isValueFocused)
                 }
 
-                Section("Details") {
+                Section("Details / Location") {
                     TextField("Description (optional)", text: $viewModel.details)
-                }
-
-                Section("Date & Time") {
-                    DatePicker("Date", selection: $viewModel.datetime)
-                }
-
-                Section("Location") {
                     TextField("Location (optional)", text: $viewModel.locationName)
+                }
+
+                Section("Details") {
+                    DatePicker("Date", selection: $viewModel.datetime)
+                    Toggle("Extraordinary", isOn: $viewModel.extraordinary)
                 }
             }
             .navigationTitle(viewModel.isEditing ? "Edit Expense" : "New Expense")

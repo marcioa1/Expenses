@@ -22,7 +22,7 @@ struct ExpensesListView: View {
                 )
                 
                 FilterView(
-                    selectedSort: $viewModel.selectedSort,
+                    selectedSort: $viewModel.selectedSort, selectedExtra: $viewModel.selectedExtra,
                     selectedCategory: $viewModel.selectedCategory,
                     categories: viewModel.categories ?? []
                 )

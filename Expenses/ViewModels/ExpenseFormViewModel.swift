@@ -20,6 +20,7 @@ class ExpenseFormViewModel {
     var locationName: String = ""
     var latitude: Double?
     var longitude: Double?
+    var extraordinary: Bool = false
 
     let expense: Expense?
     private var repository: (any DataProvider)?
@@ -60,6 +61,7 @@ class ExpenseFormViewModel {
             self.locationName = expense.locationName ?? ""
             self.latitude = expense.latitude
             self.longitude = expense.longitude
+            self.extraordinary = expense.extraordinary
         }
     }
 
@@ -75,6 +77,7 @@ class ExpenseFormViewModel {
             expense.locationName = trimmedLocation.isEmpty ? nil : trimmedLocation
             expense.latitude = latitude
             expense.longitude = longitude
+            expense.extraordinary = extraordinary
         } else {
             let newExpense = Expense(
                 category: selectedCategory,
@@ -83,7 +86,8 @@ class ExpenseFormViewModel {
                 datetime: datetime,
                 latitude: latitude,
                 longitude: longitude,
-                locationName: trimmedLocation.isEmpty ? nil : trimmedLocation
+                locationName: trimmedLocation.isEmpty ? nil : trimmedLocation,
+                extraordinary: extraordinary
             )
             context.insert(newExpense)
         }
