@@ -13,7 +13,7 @@ struct CategoryPickerView: View {
 
     var body: some View {
         HStack {
-//            Text("Category")
+            Text("Category")
             Picker("Category", selection: $selectedCategory) {
                 Text("All").tag(nil as Category?)
                 ForEach(categories.filter { $0.isActive }) { category in

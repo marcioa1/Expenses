@@ -9,29 +9,35 @@ import SwiftUI
 
 struct FilterView: View {
     @Binding var selectedSort: SortOption
+    @Binding var selectedExtra: ExtraOption
     @Binding var selectedCategory: Category?
     let categories: [Category]
 
     var body: some View {
-        HStack(spacing: 8) {
+        VStack(alignment: .leading) {
             CategoryPickerView(
                 selectedCategory: $selectedCategory,
                 categories: categories
             )
-            Spacer()
-            SortPickerView(selectedSort: $selectedSort)
-                .frame(width: 120)
+            HStack(spacing: 8) {
+                ExtraFilterView(selectedExtra: $selectedExtra)
+                Spacer()
+                SortPickerView(selectedSort: $selectedSort)
+                    .frame(width: 120)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .background(.tertiary)
-        .cornerRadius(16)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+            .background(.tertiary)
+            .cornerRadius(16)
+        
     }
 }
 
 #Preview {
     @Previewable @State var selectedSort: SortOption = .date
+    @Previewable @State var selectedExtra: ExtraOption = .all
     @Previewable @State var selectedCategory: Category? = nil
 
     let categories = [
@@ -42,6 +48,7 @@ struct FilterView: View {
 
     FilterView(
         selectedSort: $selectedSort,
+        selectedExtra: $selectedExtra,
         selectedCategory: $selectedCategory,
         categories: categories
     )
