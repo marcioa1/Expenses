@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import Observation
 
+@MainActor
 @Observable
 class ExpensesListViewModel: MonthFilterable {
     var showingForm = false
@@ -28,7 +29,7 @@ class ExpensesListViewModel: MonthFilterable {
         get { monthFilter.selectedMonthIndex }
         set {
             monthFilter.selectedMonthIndex = newValue
-            loadingState = .loading
+            
             Task { await self.refreshExpenses() }
         }
     }
@@ -88,6 +89,7 @@ class ExpensesListViewModel: MonthFilterable {
     }
 
     func refreshExpenses() async {
+        loadingState = .loading
         try? await Task.sleep(for: .seconds(1))
         guard let expenseRepository else { return }
         let start = monthFilter.monthStart()

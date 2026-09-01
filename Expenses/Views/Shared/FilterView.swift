@@ -14,24 +14,29 @@ struct FilterView: View {
     let categories: [Category]
 
     var body: some View {
-        VStack(alignment: .leading) {
-            CategoryPickerView(
-                selectedCategory: $selectedCategory,
-                categories: categories
-            )
-            HStack(spacing: 8) {
-                ExtraFilterView(selectedExtra: $selectedExtra)
-                Spacer()
-                SortPickerView(selectedSort: $selectedSort)
-                    .frame(width: 120)
+        VStack(alignment: .leading, spacing: 20) {
+            Text("Filters")
+                .font(.title2.bold())
+                .padding(.horizontal)
+                .padding(.top, 8)
+
+            VStack(alignment: .leading, spacing: 16) {
+                CategoryPickerView(
+                    selectedCategory: $selectedCategory,
+                    categories: categories
+                )
+
+                HStack(spacing: 8) {
+                    ExtraFilterView(selectedExtra: $selectedExtra)
+                    Spacer()
+                    SortPickerView(selectedSort: $selectedSort)
+                        .frame(width: 120)
+                }
             }
-        }
-            .frame(maxWidth: .infinity)
             .padding(.horizontal)
-            .padding(.vertical, 8)
-            .background(.tertiary)
-            .cornerRadius(16)
-        
+
+            Spacer()
+        }
     }
 }
 

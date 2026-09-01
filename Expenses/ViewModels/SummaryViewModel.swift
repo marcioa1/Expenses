@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 
+@MainActor
 @Observable
 class SummaryViewModel: MonthFilterable {
     private var categoryRepository: (any DataProvider)?

@@ -12,7 +12,14 @@ struct ExpensesListView: View {
     
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = ExpensesListViewModel()
-    
+    @State private var showingFilter = false
+
+    private var hasActiveFilters: Bool {
+        viewModel.selectedCategory != nil ||
+        viewModel.selectedExtra != .all ||
+        viewModel.selectedSort != .date
+    }
+
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -20,14 +27,7 @@ struct ExpensesListView: View {
                     monthOffsets: viewModel.monthOffsets,
                     selectedMonthIndex: $viewModel.selectedMonthIndex
                 )
-                
-                FilterView(
-                    selectedSort: $viewModel.selectedSort, selectedExtra: $viewModel.selectedExtra,
-                    selectedCategory: $viewModel.selectedCategory,
-                    categories: viewModel.categories ?? []
-                )
-                .padding(16)
-                
+
                 switch viewModel.loadingState {
                 case .loading:
                     ProgressView()
@@ -45,7 +45,17 @@ struct ExpensesListView: View {
                         totalAmount: viewModel.totalAmount
                     )
                 }
-                
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingFilter = true
+                    } label: {
+                        Image(systemName: hasActiveFilters
+                              ? "line.3.horizontal.decrease.circle.fill"
+                              : "line.3.horizontal.decrease.circle")
+                    }
+                }
+
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         viewModel.showingForm = true
@@ -53,6 +63,16 @@ struct ExpensesListView: View {
                         Image(systemName: "plus")
                     }
                 }
+            }
+            .sheet(isPresented: $showingFilter) {
+                FilterView(
+                    selectedSort: $viewModel.selectedSort,
+                    selectedExtra: $viewModel.selectedExtra,
+                    selectedCategory: $viewModel.selectedCategory,
+                    categories: viewModel.categories ?? []
+                )
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $viewModel.showingForm, onDismiss: {
                 Task { await viewModel.refreshExpenses() }

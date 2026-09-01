@@ -9,6 +9,7 @@ import Foundation
 import SwiftData
 import Observation
 
+@MainActor
 @Observable
 class MonthlyGridViewModel {
     private let calendar = Calendar.current
