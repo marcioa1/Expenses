@@ -32,6 +32,7 @@ struct CategoryPickerView: View {
     let categories = [
         Category(name: "Food", categoryIcon: "fork.knife"),
         Category(name: "Transport", categoryIcon: "car"),
+        Category(name: "Estacionamento", categoryIcon: "car"),
         Category(name: "Shopping", categoryIcon: "cart"),
         Category(name: "Health", categoryIcon: "heart"),
     ]

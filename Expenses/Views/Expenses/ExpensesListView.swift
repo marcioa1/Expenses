@@ -71,7 +71,7 @@ struct ExpensesListView: View {
                     selectedCategory: $viewModel.selectedCategory,
                     categories: viewModel.categories ?? []
                 )
-                .presentationDetents([.medium])
+                .presentationDetents([.height(280)])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $viewModel.showingForm, onDismiss: {

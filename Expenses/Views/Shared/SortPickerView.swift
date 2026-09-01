@@ -16,12 +16,15 @@ struct SortPickerView: View {
     @Binding var selectedSort: SortOption
 
     var body: some View {
-        Picker("Sort by", selection: $selectedSort) {
-            ForEach(SortOption.allCases, id: \.self) { option in
-                Text(option.rawValue).tag(option)
+        HStack {
+            Text("Sort by:")
+            Picker("Sort by", selection: $selectedSort) {
+                ForEach(SortOption.allCases, id: \.self) { option in
+                    Text(option.rawValue).tag(option)
+                }
             }
+            .pickerStyle(.segmented)
         }
-        .pickerStyle(.segmented)
     }
 }
 
