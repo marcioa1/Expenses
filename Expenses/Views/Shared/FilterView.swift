@@ -14,12 +14,7 @@ struct FilterView: View {
     let categories: [Category]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-//            Text("Filters")
-//                .font(.title2.bold())
-//                .padding(.horizontal)
-//                .padding(.top, 8)
-            
+        VStack(alignment: .leading, spacing: 8) {            
             CategoryPickerView(
                 selectedCategory: $selectedCategory,
                 categories: categories
