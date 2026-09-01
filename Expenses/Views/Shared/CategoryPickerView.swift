@@ -26,7 +26,6 @@ struct CategoryPickerView: View {
             .pickerStyle(.menu)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.green)
     }
 }
 

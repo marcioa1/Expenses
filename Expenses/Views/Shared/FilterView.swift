@@ -20,9 +20,9 @@ struct FilterView: View {
                 categories: categories
             )
             ExtraFilterView(selectedExtra: $selectedExtra)
+                .padding(.vertical,  16)
             SortPickerView(selectedSort: $selectedSort)
         }
-        .background(.yellow)
         .padding(.horizontal)
     }
 }
