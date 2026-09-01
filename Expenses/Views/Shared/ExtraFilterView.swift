@@ -24,7 +24,7 @@ struct ExtraFilterView: View {
                     Text(LocalizedStringKey(option.rawValue)).tag(option)
                 }
             }
-            .pickerStyle(.menu)
+            .pickerStyle(.segmented)
         }
     }
 }

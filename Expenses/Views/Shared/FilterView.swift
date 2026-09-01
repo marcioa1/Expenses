@@ -15,10 +15,10 @@ struct FilterView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Filters")
-                .font(.title2.bold())
-                .padding(.horizontal)
-                .padding(.top, 8)
+//            Text("Filters")
+//                .font(.title2.bold())
+//                .padding(.horizontal)
+//                .padding(.top, 8)
             
             CategoryPickerView(
                 selectedCategory: $selectedCategory,
@@ -27,6 +27,7 @@ struct FilterView: View {
             ExtraFilterView(selectedExtra: $selectedExtra)
             SortPickerView(selectedSort: $selectedSort)
         }
+        .background(.yellow)
         .padding(.horizontal)
     }
 }

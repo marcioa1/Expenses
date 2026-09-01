@@ -8,12 +8,17 @@
 import SwiftUI
 import SwiftData
 
+@MainActor
 struct SummaryView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var viewModel = SummaryViewModel()
+    @State private var viewModel: SummaryViewModel
 
-    init(viewModel: SummaryViewModel = SummaryViewModel()) {
-        _viewModel = State(initialValue: viewModel)
+    init() {
+        _viewModel = State(wrappedValue: SummaryViewModel())
+    }
+
+    init(viewModel: SummaryViewModel) {
+        _viewModel = State(wrappedValue: viewModel)
     }
     
     var body: some View {
