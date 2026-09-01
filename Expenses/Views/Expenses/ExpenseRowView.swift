@@ -15,6 +15,14 @@ struct ExpenseRowView: View {
             Image(systemName: expense.category.categoryIcon)
                 .font(.title3)
                 .categoryIconStyle(width: 32)
+                .overlay(alignment: .topTrailing) {
+                    if expense.extraordinary {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.yellow)
+                            .offset(x: 4, y: -4)
+                    }
+                }
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(expense.category.name)
@@ -44,5 +52,30 @@ struct ExpenseRowView: View {
         }
         .padding(.vertical, 4)
         .listRowBackground(Color.secondary)
+    }
+}
+
+#Preview("Regular") {
+    let category = Category(name: "Food", categoryIcon: "fork.knife")
+    let expense = Expense(
+        category: category,
+        details: "Lunch at the office",
+        value: 42.50,
+        locationName: "Café Central"
+    )
+    List {
+        ExpenseRowView(expense: expense)
+    }
+}
+
+#Preview("Extraordinary") {
+    let category = Category(name: "Travel", categoryIcon: "airplane")
+    let expense = Expense(
+        category: category,
+        value: 1250.00,
+        extraordinary: true
+    )
+    List {
+        ExpenseRowView(expense: expense)
     }
 }

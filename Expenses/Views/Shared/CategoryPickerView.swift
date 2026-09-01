@@ -19,10 +19,14 @@ struct CategoryPickerView: View {
                 ForEach(categories.filter { $0.isActive }) { category in
                     Label(category.name, systemImage: category.categoryIcon)
                         .tag(category as Category?)
+                        .frame(maxWidth: .infinity)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .pickerStyle(.menu)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.green)
     }
 }
 
