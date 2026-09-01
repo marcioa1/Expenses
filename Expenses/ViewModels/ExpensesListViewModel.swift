@@ -39,12 +39,23 @@ class ExpensesListViewModel: MonthFilterable {
         if let selectedCategory {
             result = result.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
         }
+        
         switch selectedSort {
         case .date:
-            return result.sorted { $0.datetime > $1.datetime }
+            result = result.sorted { $0.datetime > $1.datetime }
         case .value:
-            return result.sorted { $0.value > $1.value }
+            result = result.sorted { $0.value > $1.value }
         }
+        
+        switch selectedExtra {
+        case .all:
+            break
+        case .extra:
+            result = result.filter { $0.extraordinary }
+        case .regular:
+            result = result.filter { !$0.extraordinary}
+        }
+        return result
     }
     
     var totalAmount: Double {
