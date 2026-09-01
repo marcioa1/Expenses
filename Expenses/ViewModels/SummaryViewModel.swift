@@ -12,11 +12,14 @@ import SwiftData
 @Observable
 class SummaryViewModel: MonthFilterable {
     private var categoryRepository: (any DataProvider)?
+    private var categoryBasket: CategoryBasket?
     private var expenseRepository: ExpenseLocalDataProvider?
     
     var expenseToEdit: Expense?
     let monthFilter = MonthFilter()
-    var categories: [Category] = []
+    var categories: [Category] {
+        self.categoryBasket?.categories ?? []
+    }
     var expenses: [Expense] = []
     var loadingState: LoadingState = .loading
     
@@ -25,11 +28,17 @@ class SummaryViewModel: MonthFilterable {
     }
 
     func configure(modelContext: ModelContext) async {
-        guard loadingState == .loading else { return }
         categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
+        categoryBasket = CategoryBasket(categoryRepository: categoryRepository)
         expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
         await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.getAllCategories() }
+            group.addTask {
+                do {
+                    try await self.categoryBasket?.getAllCategories()
+                } catch {
+                    await MainActor.run { self.loadingState = .failed }
+                }
+            }
             group.addTask { await self.refreshExpenses() }
         }
         if loadingState != .failed {
@@ -47,20 +56,21 @@ class SummaryViewModel: MonthFilterable {
         }
     }
     
-    func rootCategory(of category: Category) -> Category {
-        var current = category
-        while let parent = current.parent {
-            current = parent
-        }
-        return current
-    }
+//    func rootCategory(of category: Category) -> Category {
+//        var current = category
+//        while let parent = current.parent {
+//            current = parent
+//        }
+//        return current
+//    }
     
     func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Double)], total: Double)] {
+        guard let categoryBasket else { return [] }
         let filtered = monthFilter.filteredExpenses(from: self.expenses)
         var parentMap: [UUID: (parent: Category, children: [UUID: Double])] = [:]
         
         for expense in filtered {
-            let root = rootCategory(of: expense.category)
+            let root = categoryBasket.rootCategory(of: expense.category)
             if parentMap[root.id] == nil {
                 parentMap[root.id] = (parent: root, children: [:])
             }
@@ -82,14 +92,14 @@ class SummaryViewModel: MonthFilterable {
             .sorted { $0.total > $1.total }
     }
     
-    private func getAllCategories() async {
-        guard let categoryRepository else { return }
-        do {
-            categories = try await categoryRepository.fetchAll() as! [Category]
-        } catch {
-            loadingState = .failed
-        }
-    }
+//    private func getAllCategories() async {
+//        guard let categoryRepository else { return }
+//        do {
+//            categories = try await categoryRepository.fetchAll() as! [Category]
+//        } catch {
+//            loadingState = .failed
+//        }
+//    }
     
     func refreshExpenses() async {
         try? await Task.sleep(for: .seconds(1))
