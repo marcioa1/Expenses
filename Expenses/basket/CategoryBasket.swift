@@ -17,11 +17,7 @@ final class CategoryBasket {
     
     func getAllCategories() async throws {
         guard let categoryRepository else { return }
-        //        do {
         self.categories = try await categoryRepository.fetchAll() as! [Category]
-        //        } catch {
-        //           loadingState = .failed
-        //        }
     }
     
     func rootCategory(of category: Category) -> Category {
