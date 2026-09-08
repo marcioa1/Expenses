@@ -17,16 +17,25 @@ class MonthlyGridViewModel {
     var categories: [Category]?
     var expenses: [Expense] = []
     var selectedCategory: Category?
+    var selectedExtra: ExtraOption = .all
     var loadingState: LoadingState = .loading
     private var categoryRepository: (any DataProvider)?
     private var expenseRepository: ExpenseLocalDataProvider?
     
     var filteredExpenses: [Expense] {
+        var result = expenses
         if let selectedCategory {
-            self.expenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id  }
-        } else {
-            self.expenses
+            result = self.expenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id  }
+        } 
+        switch selectedExtra {
+        case .all:
+            break
+        case .extra:
+            result = result.filter { $0.extraordinary }
+        case .regular:
+            result = result.filter { !$0.extraordinary}
         }
+        return result
     }
     
     func configure(modelContext: ModelContext) async {

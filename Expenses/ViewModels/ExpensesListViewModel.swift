@@ -15,7 +15,7 @@ class ExpensesListViewModel: MonthFilterable {
     var showingForm = false
     var expenseToEdit: Expense?
     var selectedCategory: Category?
-    var selectedSort: SortOption = .date
+    var selectedSort: SortOption? = .date
     var selectedExtra: ExtraOption = .all
     let monthFilter = MonthFilter()
     var loadingState: LoadingState = .loading
@@ -45,6 +45,8 @@ class ExpensesListViewModel: MonthFilterable {
             result = result.sorted { $0.datetime > $1.datetime }
         case .value:
             result = result.sorted { $0.value > $1.value }
+        case .none:
+            break
         }
         
         switch selectedExtra {

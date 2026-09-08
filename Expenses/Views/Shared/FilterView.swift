@@ -12,6 +12,9 @@ struct FilterView: View {
     @Binding var selectedExtra: ExtraOption
     @Binding var selectedCategory: Category?
     let categories: [Category]
+    private var hasSort: Bool {
+        selectedSort != nil
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {            
@@ -21,8 +24,11 @@ struct FilterView: View {
             )
             ExtraFilterView(selectedExtra: $selectedExtra)
                 .padding(.vertical,  16)
-            if selectedSort != nil {
-                    SortPickerView(selectedSort: $selectedSort)
+            if hasSort {
+                    SortPickerView(selectedSort: Binding(
+                        get: { selectedSort ?? .date },
+                        set: { selectedSort = $0 }
+                    ))
             }
         }
         .padding(.horizontal)

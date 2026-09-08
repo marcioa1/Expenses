@@ -12,7 +12,13 @@ struct MonthlyGridView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = MonthlyGridViewModel()
     @State private var showingFilter = false
+    @State private var selectedSort: SortOption? = nil
 
+    private var hasActiveFilters: Bool {
+        viewModel.selectedCategory != nil ||
+        viewModel.selectedExtra != .all
+    }
+    
     var body: some View {
         let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
         VStack(spacing: 0) {
@@ -23,7 +29,7 @@ struct MonthlyGridView: View {
                 Button {
                     showingFilter = true
                 } label: {
-                    Image(systemName: viewModel.selectedCategory == nil
+                    Image(systemName: hasActiveFilters
                           ? "line.3.horizontal.decrease.circle"
                           : "line.3.horizontal.decrease.circle.fill")
                         .font(.title3)
@@ -32,7 +38,6 @@ struct MonthlyGridView: View {
             .padding(.horizontal)
             .padding(.vertical, 12)
 
-            HStack {\n                Spacer()\n            }
             ScrollView {
                 Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
                     headerRow
@@ -54,16 +59,13 @@ struct MonthlyGridView: View {
             }
         }
         .sheet(isPresented: $showingFilter) {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Filter")
-                    .font(.headline)
-                CategoryPickerView(
-                    selectedCategory: $viewModel.selectedCategory,
-                    categories: viewModel.categories ?? []
-                )
-            }
-            .padding()
-            .presentationDetents([.fraction(0.25)])
+            FilterView(
+                selectedSort: $selectedSort,
+                selectedExtra: $viewModel.selectedExtra,
+                selectedCategory: $viewModel.selectedCategory,
+                categories: viewModel.categories ?? []
+            )
+            .presentationDetents([.height(280)])
             .presentationDragIndicator(.visible)
         }
         .task {
