@@ -11,21 +11,28 @@ import SwiftData
 struct MonthlyGridView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var viewModel = MonthlyGridViewModel()
+    @State private var showingFilter = false
 
     var body: some View {
         let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
-        NavigationStack {
+        VStack(spacing: 0) {
             HStack {
+                Text("Monthly Overview")
+                    .font(.title2.weight(.semibold))
                 Spacer()
-                
-                CategoryPickerView(
-                    selectedCategory: $viewModel.selectedCategory,
-                    categories:
-                        viewModel.categories ?? []
-                )
-                .pickerStyle(.menu)
-                .padding(16)
+                Button {
+                    showingFilter = true
+                } label: {
+                    Image(systemName: viewModel.selectedCategory == nil
+                          ? "line.3.horizontal.decrease.circle"
+                          : "line.3.horizontal.decrease.circle.fill")
+                        .font(.title3)
+                }
             }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+
+            HStack {\n                Spacer()\n            }
             ScrollView {
                 Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
                     headerRow
@@ -45,7 +52,19 @@ struct MonthlyGridView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Monthly Overview")
+        }
+        .sheet(isPresented: $showingFilter) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Filter")
+                    .font(.headline)
+                CategoryPickerView(
+                    selectedCategory: $viewModel.selectedCategory,
+                    categories: viewModel.categories ?? []
+                )
+            }
+            .padding()
+            .presentationDetents([.fraction(0.25)])
+            .presentationDragIndicator(.visible)
         }
         .task {
             await viewModel.configure(modelContext: modelContext)

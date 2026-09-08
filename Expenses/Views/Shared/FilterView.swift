@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct FilterView: View {
-    @Binding var selectedSort: SortOption
+    @Binding var selectedSort: SortOption?
     @Binding var selectedExtra: ExtraOption
     @Binding var selectedCategory: Category?
     let categories: [Category]
@@ -21,14 +21,16 @@ struct FilterView: View {
             )
             ExtraFilterView(selectedExtra: $selectedExtra)
                 .padding(.vertical,  16)
-            SortPickerView(selectedSort: $selectedSort)
+            if selectedSort != nil {
+                    SortPickerView(selectedSort: $selectedSort)
+            }
         }
         .padding(.horizontal)
     }
 }
 
-#Preview {
-    @Previewable @State var selectedSort: SortOption = .date
+#Preview("With Sort") {
+    @Previewable @State var selectedSort: SortOption? = .date
     @Previewable @State var selectedExtra: ExtraOption = .all
     @Previewable @State var selectedCategory: Category? = nil
     
@@ -38,6 +40,25 @@ struct FilterView: View {
         Category(name: "Shopping", categoryIcon: "cart"),
     ]
     
+    FilterView(
+        selectedSort: $selectedSort,
+        selectedExtra: $selectedExtra,
+        selectedCategory: $selectedCategory,
+        categories: categories
+    )
+}
+
+#Preview("No Sort") {
+    @Previewable @State var selectedSort: SortOption? = nil
+    @Previewable @State var selectedExtra: ExtraOption = .all
+    @Previewable @State var selectedCategory: Category? = nil
+
+    let categories = [
+        Category(name: "Food", categoryIcon: "fork.knife"),
+        Category(name: "Transport", categoryIcon: "car"),
+        Category(name: "Shopping", categoryIcon: "cart"),
+    ]
+
     FilterView(
         selectedSort: $selectedSort,
         selectedExtra: $selectedExtra,
