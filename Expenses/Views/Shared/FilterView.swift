@@ -15,6 +15,12 @@ struct FilterView: View {
     private var hasSort: Bool {
         selectedSort != nil
     }
+    private var sortBinding: Binding<SortOption> {
+        Binding(
+            get: { selectedSort ?? .date },
+            set: { selectedSort = $0 }
+        )
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {            
@@ -25,10 +31,7 @@ struct FilterView: View {
             ExtraFilterView(selectedExtra: $selectedExtra)
                 .padding(.vertical,  16)
             if hasSort {
-                    SortPickerView(selectedSort: Binding(
-                        get: { selectedSort ?? .date },
-                        set: { selectedSort = $0 }
-                    ))
+                    SortPickerView(selectedSort: sortBinding)
             }
         }
         .padding(.horizontal)
