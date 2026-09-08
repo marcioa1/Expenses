@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct FilterView: View {
+    @Environment(\.dismiss) private var dismiss
     @Binding var selectedSort: SortOption?
     @Binding var selectedExtra: ExtraOption
     @Binding var selectedCategory: Category?
@@ -23,18 +24,33 @@ struct FilterView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {            
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("Filters")
+                    .font(.headline)
+                Spacer()
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.title2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .padding(.bottom, 4)
+
             CategoryPickerView(
                 selectedCategory: $selectedCategory,
                 categories: categories
             )
             ExtraFilterView(selectedExtra: $selectedExtra)
-                .padding(.vertical,  16)
+                .padding(.vertical, 16)
             if hasSort {
-                    SortPickerView(selectedSort: sortBinding)
+                SortPickerView(selectedSort: sortBinding)
             }
         }
         .padding(.horizontal)
+        .padding(.top, 12)
     }
 }
 
