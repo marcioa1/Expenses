@@ -98,6 +98,17 @@ struct ExpensesListView: View {
                     .onTapGesture {
                         viewModel.expenseToEdit = expense
                     }
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            viewModel.toggleExtraordinary(expense)
+                        } label: {
+                            Label(
+                                expense.extraordinary ? "Unmark Extra" : "Mark Extra",
+                                systemImage: expense.extraordinary ? "minus.circle" : "plus.circle"
+                            )
+                        }
+                        .tint(.yellow)
+                    }
             }
             .onDelete { offsets in
                 viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)

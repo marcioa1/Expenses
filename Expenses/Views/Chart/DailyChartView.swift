@@ -13,10 +13,16 @@ struct DailyChartView: View {
     @Query(sort: \Expense.datetime, order: .reverse) private var allExpenses: [Expense]
 
     @State private var viewModel = DailyChartViewModel()
+    @State private var showingFilter = false
+    @State private var selectedSort: SortOption? = nil
 
     var body: some View {
         NavigationStack {
-            List {
+            VStack {
+                HStack {
+                    Text("Daily Spending")
+                        .font(.title2.weight(.semibold))
+                }
                 MonthCarouselView(
                     monthOffsets: viewModel.monthOffsets,
                     selectedMonthIndex: $viewModel.selectedMonthIndex
@@ -62,13 +68,43 @@ struct DailyChartView: View {
 #Preview {
     let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     let context = container.mainContext
+
     let food = Category(name: "Food", categoryIcon: "fork.knife")
     let transport = Category(name: "Transport", categoryIcon: "car.fill")
+    let shopping = Category(name: "Shopping", categoryIcon: "bag.fill")
     context.insert(food)
     context.insert(transport)
-    context.insert(Expense(category: food, details: "Lunch", value: 25.50))
-    context.insert(Expense(category: food, details: "Groceries", value: 87.30))
-    context.insert(Expense(category: transport, value: 12.00))
+    context.insert(shopping)
+
+    let calendar = Calendar.current
+    let today = Date.now
+
+    func date(daysAgo: Int) -> Date {
+        calendar.date(byAdding: .day, value: -daysAgo, to: today) ?? today
+    }
+
+    let sampleExpenses: [(Category, String, Double, Int)] = [
+        (food, "Lunch", 25.50, 0),
+        (food, "Groceries", 87.30, 2),
+        (transport, "Bus", 12.00, 2),
+        (food, "Coffee", 8.50, 4),
+        (shopping, "Books", 45.00, 5),
+        (transport, "Uber", 22.00, 6),
+        (food, "Dinner", 63.00, 7),
+        (shopping, "Clothes", 120.00, 9),
+        (food, "Breakfast", 14.00, 10),
+        (transport, "Taxi", 18.50, 12),
+        (food, "Lunch", 31.00, 14),
+        (shopping, "Electronics", 299.00, 16),
+        (food, "Snacks", 9.00, 18),
+        (transport, "Gas", 55.00, 20),
+        (food, "Groceries", 102.00, 21),
+    ]
+
+    for (category, details, value, daysAgo) in sampleExpenses {
+        context.insert(Expense(category: category, details: details, value: value, datetime: date(daysAgo: daysAgo)))
+    }
+
     return DailyChartView()
         .modelContainer(container)
 }
