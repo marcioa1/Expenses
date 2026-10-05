@@ -69,6 +69,10 @@ class ExpensesListViewModel: MonthFilterable {
             context.delete(expenses[index])
         }
     }
+
+    func toggleExtraordinary(_ expense: Expense) {
+        expense.extraordinary.toggle()
+    }
     
     func configure(modelContext: ModelContext) async {
         categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
