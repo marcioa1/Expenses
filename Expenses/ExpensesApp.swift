@@ -24,26 +24,37 @@ struct ExpensesApp: App {
         }
     }()
 
+    let authService: AuthService = RemoteAuthService(baseURL: AppConfiguration.apiBaseURL)
+
+    /// `nil` until the user signs in; drives whether the login screen or the main tabs are shown.
+    @State private var session: AuthSession?
+
     var body: some Scene {
         WindowGroup {
-            TabView {
-                Tab("Expenses", systemImage: "list.bullet") {
-                    ExpensesListView()
+            if session == nil {
+                LoginView(authService: authService) { newSession in
+                    session = newSession
                 }
-                Tab("Categories", systemImage: "square.grid.2x2") {
-                    CategoriesView()
+            } else {
+                TabView {
+                    Tab("Expenses", systemImage: "list.bullet") {
+                        ExpensesListView()
+                    }
+                    Tab("Categories", systemImage: "square.grid.2x2") {
+                        CategoriesView()
+                    }
+                    Tab("Summary", systemImage: "chart.pie.fill") {
+                        SummaryView()
+                    }
+                    Tab("Chart", systemImage: "chart.bar.fill") {
+                        DailyChartView()
+                    }
+                    Tab("Grid", systemImage: "tablecells") {
+                        MonthlyGridView()
+                    }
                 }
-                Tab("Summary", systemImage: "chart.pie.fill") {
-                    SummaryView()
-                }
-                Tab("Chart", systemImage: "chart.bar.fill") {
-                    DailyChartView()
-                }
-                Tab("Grid", systemImage: "tablecells") {
-                    MonthlyGridView()
-                }
+                .tint(.orange)
             }
-            .tint(.orange)
         }
         .modelContainer(sharedModelContainer)
     }

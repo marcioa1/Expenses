@@ -34,9 +34,22 @@
 		01911A8C2F7C82F300971144 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		013DADA53077CDC90071B2A1 /* Exceptions for "Expenses" folder in "Expenses" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 018023B82F79C740005961B9 /* Expenses */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		018023BB2F79C740005961B9 /* Expenses */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				013DADA53077CDC90071B2A1 /* Exceptions for "Expenses" folder in "Expenses" target */,
+			);
 			path = Expenses;
 			sourceTree = "<group>";
 		};
@@ -407,6 +420,7 @@
 		018023DD2F79C741005961B9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				API_BASE_URL = "https://ispent.fly.dev";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -414,6 +428,7 @@
 				DEVELOPMENT_TEAM = PKZ6K58H58;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Expenses/Info.plist;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Expenses saves your location when you record an expense so you can remember where you spent money.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -440,6 +455,7 @@
 		018023DE2F79C741005961B9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				API_BASE_URL = "https://ispent.fly.dev";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -447,6 +463,7 @@
 				DEVELOPMENT_TEAM = PKZ6K58H58;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Expenses/Info.plist;
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Expenses saves your location when you record an expense so you can remember where you spent money.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
