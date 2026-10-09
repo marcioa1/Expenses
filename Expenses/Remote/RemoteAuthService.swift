@@ -60,11 +60,8 @@ final class RemoteAuthService: AuthService {
             throw AuthError.invalidResponse
         }
         return AuthSession(
-//            userID: response.userId,
-//            email: response.email,
             accessToken: response.access_token,
             tokenType: response.token_type //,
-//            expiresAt: response.expiresAt
         )
     }
 
