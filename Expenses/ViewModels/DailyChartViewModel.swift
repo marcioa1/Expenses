@@ -13,12 +13,22 @@ struct DailyTotal: Identifiable {
     let total: Double
 }
 
+@MainActor
 @Observable
 class DailyChartViewModel: MonthFilterable {
     let monthFilter = MonthFilter()
     var selectedCategory: Category?
     var selectedExtra: ExtraOption = .all
-    var categories: [Category]?
+    private var categoryBasket: CategoryBasket?
+    var categories: [Category] {
+        categoryBasket?.categories ?? []
+    }
+
+    func configure(categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
+        try? await categoryBasket.loadIfNeeded()
+    }
+
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
         set { monthFilter.selectedMonthIndex = newValue }
@@ -36,7 +46,8 @@ class DailyChartViewModel: MonthFilterable {
 
         var result = allExpenses
         if let selectedCategory {
-            result = allExpenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id  }
+            let ids = categories.ids(matching: selectedCategory)
+            result = allExpenses.filter { ids.contains($0.remoteCategoryID) }
         }
         switch selectedExtra {
         case .all:

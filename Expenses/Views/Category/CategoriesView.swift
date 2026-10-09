@@ -8,12 +8,8 @@
 import SwiftUI
 
 struct CategoriesView: View {
+    @Environment(CategoryBasket.self) private var categoryBasket
     @State private var viewModel = CategoriesViewModel()
-    private let repository: any CategoryRepository
-
-    init(repository: any CategoryRepository = CategoryRemoteDataProvider()) {
-        self.repository = repository
-    }
 
     private let columns = [
         GridItem(.flexible()),
@@ -31,10 +27,10 @@ struct CategoriesView: View {
                 )
             }
             .task {
-                await viewModel.configure(with: repository)
+                await viewModel.configure(with: categoryBasket)
             }
             .refreshable {
-                await viewModel.getAll()
+                await viewModel.refresh()
             }
             .navigationTitle("Categories")
             .toolbar {
@@ -47,19 +43,10 @@ struct CategoriesView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showingForm) {
-                CategoryFormView(
-                    categories: viewModel.categories,
-                    repository: repository,
-                    onSaved: { await viewModel.getAll() }
-                )
+                CategoryFormView(categoryBasket: categoryBasket)
             }
             .sheet(item: $viewModel.categoryToEdit) { category in
-                CategoryFormView(
-                    category: category,
-                    categories: viewModel.categories,
-                    repository: repository,
-                    onSaved: { await viewModel.getAll() }
-                )
+                CategoryFormView(category: category, categoryBasket: categoryBasket)
             }
         }
     }
@@ -127,6 +114,7 @@ struct SubcategoriesView: View {
 
 #if DEBUG
 #Preview {
-    CategoriesView(repository: MockCategoryDataProvider())
+    CategoriesView()
+        .environment(CategoryBasket(categoryRepository: MockCategoryDataProvider()))
 }
 #endif

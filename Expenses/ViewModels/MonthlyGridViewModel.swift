@@ -14,19 +14,22 @@ import Observation
 class MonthlyGridViewModel {
     private let calendar = Calendar.current
     let monthFilter = MonthFilter()
-    var categories: [Category]?
+    private var categoryBasket: CategoryBasket?
+    var categories: [Category] {
+        categoryBasket?.categories ?? []
+    }
     var expenses: [Expense] = []
     var selectedCategory: Category?
     var selectedExtra: ExtraOption = .all
     var loadingState: LoadingState = .loading
-    private var categoryRepository: (any DataProvider)?
     private var expenseRepository: ExpenseLocalDataProvider?
     
     var filteredExpenses: [Expense] {
         var result = expenses
         if let selectedCategory {
-            result = self.expenses.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id  }
-        } 
+            let ids = categories.ids(matching: selectedCategory)
+            result = self.expenses.filter { ids.contains($0.remoteCategoryID) }
+        }
         switch selectedExtra {
         case .all:
             break
@@ -38,8 +41,8 @@ class MonthlyGridViewModel {
         return result
     }
     
-    func configure(modelContext: ModelContext) async {
-        categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
+    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
         expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.getAllCategories() }
@@ -51,9 +54,9 @@ class MonthlyGridViewModel {
     }
 
     private func getAllCategories() async {
-        guard let categoryRepository else { return }
+        guard let categoryBasket else { return }
         do {
-            categories = try await categoryRepository.fetchAll() as? [Category]
+            try await categoryBasket.loadIfNeeded()
         } catch {
             loadingState = .failed
         }

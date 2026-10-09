@@ -33,11 +33,11 @@ struct CategoryPickerView: View {
     @Previewable @State var selectedCategory: Category? = nil
 
     let categories = [
-        Category(name: "Food", categoryIcon: "fork.knife"),
-        Category(name: "Transport", categoryIcon: "car"),
-        Category(name: "Estacionamento", categoryIcon: "car"),
-        Category(name: "Shopping", categoryIcon: "cart"),
-        Category(name: "Health", categoryIcon: "heart"),
+        Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
+        Category(id: 2, name: "Transport", categoryIcon: "car"),
+        Category(id: 3, name: "Estacionamento", categoryIcon: "car"),
+        Category(id: 4, name: "Shopping", categoryIcon: "cart"),
+        Category(id: 5, name: "Health", categoryIcon: "heart"),
     ]
 
     CategoryPickerView(selectedCategory: $selectedCategory, categories: categories)

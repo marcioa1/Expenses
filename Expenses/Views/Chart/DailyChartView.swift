@@ -11,6 +11,7 @@ import Charts
 
 struct DailyChartView: View {
     @Query(sort: \Expense.datetime, order: .reverse) private var allExpenses: [Expense]
+    @Environment(CategoryBasket.self) private var categoryBasket
     
     @State private var viewModel = DailyChartViewModel()
     @State private var showingFilter = false
@@ -73,10 +74,13 @@ struct DailyChartView: View {
                 selectedSort: $selectedSort,
                 selectedExtra: $viewModel.selectedExtra,
                 selectedCategory: $viewModel.selectedCategory,
-                categories: viewModel.categories ?? []
+                categories: viewModel.categories
             )
             .presentationDetents([.height(280)])
             .presentationDragIndicator(.visible)
+        }
+        .task {
+            await viewModel.configure(categoryBasket: categoryBasket)
         }
     }
 }

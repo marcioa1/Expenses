@@ -12,7 +12,7 @@ import Testing
 struct CategoryBasketTests {
 
     @Test func loadIfNeededFetchesCategories() async throws {
-        let food = Category(name: "Food")
+        let food = Category(id: 1, name: "Food")
         let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food]))
 
         try await basket.loadIfNeeded()
@@ -22,23 +22,23 @@ struct CategoryBasketTests {
     }
 
     @Test func loadIfNeededDoesNotRefetchOnceLoaded() async throws {
-        let repository = MockCategoryDataProvider(categories: [Category(name: "Food")])
+        let repository = MockCategoryDataProvider(categories: [Category(id: 1, name: "Food")])
         let basket = CategoryBasket(categoryRepository: repository)
         try await basket.loadIfNeeded()
 
         // Change the server-side data behind the basket's back.
-        _ = try await repository.create(Category(name: "Transport"))
+        _ = try await repository.create(CategoryDraft(name: "Transport"))
         try await basket.loadIfNeeded()
 
         #expect(basket.categories.map(\.name) == ["Food"])
     }
 
     @Test func getAllCategoriesAlwaysRefetches() async throws {
-        let repository = MockCategoryDataProvider(categories: [Category(name: "Food")])
+        let repository = MockCategoryDataProvider(categories: [Category(id: 1, name: "Food")])
         let basket = CategoryBasket(categoryRepository: repository)
         try await basket.loadIfNeeded()
 
-        _ = try await repository.create(Category(name: "Transport"))
+        _ = try await repository.create(CategoryDraft(name: "Transport"))
         try await basket.getAllCategories()
 
         #expect(basket.categories.count == 2)
@@ -46,14 +46,25 @@ struct CategoryBasketTests {
 
     @Test func createAddsCategorySortedByName() async throws {
         let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: []))
-        try await basket.create(Category(name: "Transport"))
-        try await basket.create(Category(name: "Food"))
+        try await basket.create(CategoryDraft(name: "Transport"))
+        try await basket.create(CategoryDraft(name: "Food"))
 
         #expect(basket.categories.map(\.name) == ["Food", "Transport"])
     }
 
+    @Test func createStoresServerAssignedID() async throws {
+        let food = Category(id: 7, name: "Food")
+        let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food]), categories: [food])
+
+        try await basket.create(CategoryDraft(name: "Restaurants", parentID: food.id))
+
+        let created = try #require(basket.categories.first { $0.name == "Restaurants" })
+        #expect(created.id == 8)
+        #expect(created.parentID == food.id)
+    }
+
     @Test func updateReplacesCategory() async throws {
-        let food = Category(name: "Food")
+        let food = Category(id: 1, name: "Food")
         let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food]), categories: [food])
 
         var renamed = food
@@ -64,7 +75,7 @@ struct CategoryBasketTests {
     }
 
     @Test func deleteRemovesCategory() async throws {
-        let food = Category(name: "Food")
+        let food = Category(id: 1, name: "Food")
         let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food]), categories: [food])
 
         try await basket.delete(food)
@@ -73,9 +84,9 @@ struct CategoryBasketTests {
     }
 
     @Test func rootCategoryWalksUpToTopLevel() {
-        let food = Category(name: "Food")
-        let restaurants = Category(name: "Restaurants", parentID: food.id)
-        let sushi = Category(name: "Sushi", parentID: restaurants.id)
+        let food = Category(id: 1, name: "Food")
+        let restaurants = Category(id: 3, name: "Restaurants", parentID: food.id)
+        let sushi = Category(id: 4, name: "Sushi", parentID: restaurants.id)
         let basket = CategoryBasket(categories: [food, restaurants, sushi])
 
         #expect(basket.rootCategory(of: sushi).id == food.id)

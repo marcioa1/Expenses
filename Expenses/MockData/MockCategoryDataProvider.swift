@@ -16,11 +16,11 @@ final class MockCategoryDataProvider: CategoryRepository {
 
     init() {
         self.categories = [
-            Category(name: "Food", categoryIcon: "fork.knife"),
-            Category(name: "Transport", categoryIcon: "car.fill"),
-            Category(name: "Entertainment", categoryIcon: "gamecontroller.fill"),
-            Category(name: "Health", categoryIcon: "heart.fill"),
-            Category(name: "Shopping", categoryIcon: "bag.fill")
+            Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
+            Category(id: 2, name: "Transport", categoryIcon: "car.fill"),
+            Category(id: 3, name: "Entertainment", categoryIcon: "gamecontroller.fill"),
+            Category(id: 4, name: "Health", categoryIcon: "heart.fill"),
+            Category(id: 5, name: "Shopping", categoryIcon: "bag.fill")
         ]
     }
 
@@ -32,7 +32,16 @@ final class MockCategoryDataProvider: CategoryRepository {
         categories
     }
 
-    func create(_ category: Category) async throws -> Category {
+    /// Mimics the server by assigning the next available `id`.
+    func create(_ draft: CategoryDraft) async throws -> Category {
+        let nextID = (categories.map(\.id).max() ?? 0) + 1
+        let category = Category(
+            id: nextID,
+            name: draft.name,
+            isActive: draft.isActive,
+            categoryIcon: draft.categoryIcon,
+            parentID: draft.parentID
+        )
         categories.append(category)
         return category
     }

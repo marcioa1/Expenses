@@ -9,7 +9,7 @@ import SwiftUI
 
 struct ExpenseRowView: View {
     let expense: Expense
-    /// The expense's category, resolved from `expense.categoryID`; `nil` if it isn't loaded or no longer exists.
+    /// The expense's category, resolved from `expense.remoteCategoryID`; `nil` if it isn't loaded or no longer exists.
     let category: Category?
 
     var body: some View {
@@ -58,9 +58,9 @@ struct ExpenseRowView: View {
 }
 
 #Preview("Regular") {
-    let category = Category(name: "Food", categoryIcon: "fork.knife")
+    let category = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
     let expense = Expense(
-        categoryID: category.id,
+        remoteCategoryID: category.id,
         details: "Lunch at the office",
         value: 42.50,
         locationName: "Café Central"
@@ -71,9 +71,9 @@ struct ExpenseRowView: View {
 }
 
 #Preview("Extraordinary") {
-    let category = Category(name: "Travel", categoryIcon: "airplane")
+    let category = Category(id: 2, name: "Travel", categoryIcon: "airplane")
     let expense = Expense(
-        categoryID: category.id,
+        remoteCategoryID: category.id,
         value: 1250.00,
         extraordinary: true
     )

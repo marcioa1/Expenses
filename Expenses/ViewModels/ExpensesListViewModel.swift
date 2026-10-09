@@ -20,9 +20,12 @@ class ExpensesListViewModel: MonthFilterable {
     let monthFilter = MonthFilter()
     var loadingState: LoadingState = .loading
     
-    var categories: [Category]?
+    /// Shared category store, provided by the view via `configure`.
+    var categoryBasket: CategoryBasket?
+    var categories: [Category] {
+        categoryBasket?.categories ?? []
+    }
     var expenses: [Expense] = []
-    private var categoryRepository: (any DataProvider)?
     private var expenseRepository: ExpenseLocalDataProvider?
     
     var selectedMonthIndex: Int {
@@ -37,7 +40,8 @@ class ExpensesListViewModel: MonthFilterable {
     func filteredExpenses() -> [Expense] {
         var result = expenses
         if let selectedCategory {
-            result = result.filter { $0.category.id == selectedCategory.id || $0.category.parent?.id == selectedCategory.id }
+            let ids = categories.ids(matching: selectedCategory)
+            result = result.filter { ids.contains($0.remoteCategoryID) }
         }
         
         switch selectedSort {
@@ -74,8 +78,12 @@ class ExpensesListViewModel: MonthFilterable {
         expense.extraordinary.toggle()
     }
     
-    func configure(modelContext: ModelContext) async {
-        categoryRepository = CategoryLocalDataProvider(modelContext: modelContext)
+    func category(for expense: Expense) -> Category? {
+        categories.category(withID: expense.remoteCategoryID)
+    }
+
+    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
         expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.getAllCategories() }
@@ -87,22 +95,21 @@ class ExpensesListViewModel: MonthFilterable {
     }
     
     private func getAllCategories() async {
-        guard let categoryRepository else { return }
+        guard let categoryBasket else { return }
         do {
-            categories = try await categoryRepository.fetchAll() as? [Category]
+            try await categoryBasket.loadIfNeeded()
         } catch {
             loadingState = .failed
         }
     }
     
     func latestCategory(forLocationName locationName: String) async -> Category? {
-        if let category = expenses
+        let remoteCategoryID = expenses
             .filter({ $0.locationName == locationName })
             .sorted(by: { $0.datetime > $1.datetime })
-            .first?.category {
-            return category
-        }
-        return try? expenseRepository?.latestCategory(forLocationName: locationName)
+            .first?.remoteCategoryID
+            ?? (try? expenseRepository?.latestCategoryID(forLocationName: locationName))
+        return categories.category(withID: remoteCategoryID)
     }
 
     func refreshExpenses() async {

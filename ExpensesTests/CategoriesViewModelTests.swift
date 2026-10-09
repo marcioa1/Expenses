@@ -6,7 +6,6 @@
 //
 
 import Testing
-import SwiftData
 @testable import Expenses
 
 @MainActor
@@ -17,7 +16,7 @@ struct CategoriesViewModelTests {
     private func makeViewModel(with categories: [Category] = []) async -> CategoriesViewModel {
         let vm = CategoriesViewModel()
         let mockRepo = MockCategoryDataProvider(categories: categories)
-        await vm.configure(with: mockRepo)
+        await vm.configure(with: CategoryBasket(categoryRepository: mockRepo))
         return vm
     }
 
@@ -33,8 +32,8 @@ struct CategoriesViewModelTests {
     // MARK: - configure
 
     @Test func configurePopulatesCategories() async {
-        let food = Category(name: "Food")
-        let transport = Category(name: "Transport")
+        let food = Category(id: 1, name: "Food")
+        let transport = Category(id: 2, name: "Transport")
         let vm = await makeViewModel(with: [food, transport])
 
         #expect(vm.categories.count == 2)
@@ -48,8 +47,8 @@ struct CategoriesViewModelTests {
     // MARK: - rootCategories
 
     @Test func rootCategoriesReturnsOnlyTopLevel() async {
-        let parent = Category(name: "Food")
-        let child = Category(name: "Restaurants", parent: parent)
+        let parent = Category(id: 1, name: "Food")
+        let child = Category(id: 3, name: "Restaurants", parentID: parent.id)
         let vm = await makeViewModel(with: [parent, child])
 
         let roots = vm.rootCategories()
@@ -58,8 +57,8 @@ struct CategoriesViewModelTests {
     }
 
     @Test func rootCategoriesIsEmptyWhenAllHaveParents() async {
-        let parent = Category(name: "Food")
-        let child = Category(name: "Restaurants", parent: parent)
+        let parent = Category(id: 1, name: "Food")
+        let child = Category(id: 3, name: "Restaurants", parentID: parent.id)
         // Only inserting children — not the parent itself
         let vm = await makeViewModel(with: [child])
 
@@ -68,8 +67,8 @@ struct CategoriesViewModelTests {
     }
 
     @Test func rootCategoriesReturnsAllWhenNoneHaveParent() async {
-        let food = Category(name: "Food")
-        let transport = Category(name: "Transport")
+        let food = Category(id: 1, name: "Food")
+        let transport = Category(id: 2, name: "Transport")
         let vm = await makeViewModel(with: [food, transport])
 
         let roots = vm.rootCategories()

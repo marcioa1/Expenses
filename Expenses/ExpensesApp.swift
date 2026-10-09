@@ -12,7 +12,6 @@ import SwiftData
 struct ExpensesApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Category.self,
             Expense.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
@@ -27,6 +26,9 @@ struct ExpensesApp: App {
     let authService: AuthService = RemoteAuthService(baseURL: AppConfiguration.apiBaseURL)
 
     private let sessionStore = SessionStore()
+
+    /// Single source of categories shared by every tab.
+    @State private var categoryBasket = CategoryBasket(categoryRepository: CategoryRemoteDataProvider())
 
     /// `nil` until the user signs in; drives whether the login screen or the main tabs are shown.
     /// Restored from the Keychain on launch so the user stays signed in.
@@ -58,6 +60,7 @@ struct ExpensesApp: App {
                     }
                 }
                 .tint(.orange)
+                .environment(categoryBasket)
             }
         }
         .modelContainer(sharedModelContainer)

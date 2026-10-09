@@ -11,6 +11,7 @@ import SwiftData
 @MainActor
 struct SummaryView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(CategoryBasket.self) private var categoryBasket
     @State private var viewModel: SummaryViewModel
 
     init() {
@@ -50,7 +51,7 @@ struct SummaryView: View {
                 ExpenseFormView(expense: expense)
             }
             .task {
-                await viewModel.configure(modelContext: modelContext)
+                await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
             }
         }
     }
@@ -65,6 +66,7 @@ struct SummaryView: View {
             )
             RecentExpensesView(
                 expenses: Array(viewModel.filteredExpenses(from: viewModel.expenses).prefix(7)),
+                categories: viewModel.categories,
                 expenseToEdit: $viewModel.expenseToEdit
             )
         }
@@ -73,19 +75,19 @@ struct SummaryView: View {
 
 #Preview("Error") {
     SummaryView(viewModel: SummaryViewModel(previewState: .failed))
-        .modelContainer(for: [Expense.self, Category.self], inMemory: true)
+        .modelContainer(for: [Expense.self], inMemory: true)
+        .environment(CategoryBasket())
 }
 
 #Preview("Success") {
-    let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let container = try! ModelContainer(for: Expense.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     let context = container.mainContext
-    let food = Category(name: "Food", categoryIcon: "fork.knife")
-    let transport = Category(name: "Transport", categoryIcon: "car.fill")
-    context.insert(food)
-    context.insert(transport)
-    context.insert(Expense(category: food, details: "Lunch", value: 25.50))
-    context.insert(Expense(category: food, details: "Groceries", value: 87.30))
-    context.insert(Expense(category: transport, value: 12.00))
+    let food = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
+    let transport = Category(id: 2, name: "Transport", categoryIcon: "car.fill")
+    context.insert(Expense(remoteCategoryID: food.id, details: "Lunch", value: 25.50))
+    context.insert(Expense(remoteCategoryID: food.id, details: "Groceries", value: 87.30))
+    context.insert(Expense(remoteCategoryID: transport.id, value: 12.00))
     return SummaryView()
         .modelContainer(container)
+        .environment(CategoryBasket(categories: [food, transport]))
 }

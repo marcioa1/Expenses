@@ -10,22 +10,26 @@ import SwiftData
 import Observation
 import MapKit
 
+@MainActor
 @Observable
 class ExpenseFormViewModel {
     var selectedCategory: Category?
     var details: String = ""
     var value: Double?
     var datetime: Date = .now
-    var categories: [Category] = []
     var locationName: String = ""
     var latitude: Double?
     var longitude: Double?
     var extraordinary: Bool = false
 
     let expense: Expense?
-    private var repository: (any DataProvider)?
+    private var categoryBasket: CategoryBasket?
     private var expenseRepository: ExpenseLocalDataProvider?
     private let locationManager = LocationManager()
+
+    var categories: [Category] {
+        (categoryBasket?.categories ?? []).sorted { $0.name < $1.name }
+    }
 
     var isEditing: Bool { expense != nil }
 
@@ -33,28 +37,30 @@ class ExpenseFormViewModel {
         selectedCategory != nil && value != nil && value! > 0
     }
 
-    func configure(modelContext: ModelContext) async {
-        repository = CategoryLocalDataProvider(modelContext: modelContext)
+    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
         expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
-        await fetchCategories()
+        await configure(with: categoryBasket)
         if !isEditing {
             await resolveLocation()
         }
     }
 
-    func configure(with repository: any DataProvider) async {
-        self.repository = repository
-        await fetchCategories()
+    func configure(with categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
+        try? await categoryBasket.loadIfNeeded()
+        if let expense {
+            selectedCategory = categoryBasket.category(withID: expense.remoteCategoryID)
+        }
     }
 
     func leafCategories() -> [Category] {
-        categories.filter { $0.subcategories.isEmpty }
+        categories.filter { categories.subcategories(of: $0).isEmpty }
     }
 
     init(expense: Expense? = nil) {
         self.expense = expense
+        // `selectedCategory` is resolved from `expense.remoteCategoryID` once categories are fetched.
         if let expense {
-            self.selectedCategory = expense.category
             self.details = expense.details ?? ""
             self.value = expense.value
             self.datetime = expense.datetime
@@ -70,7 +76,7 @@ class ExpenseFormViewModel {
         let trimmedDetails = details.trimmingCharacters(in: .whitespaces)
         let trimmedLocation = locationName.trimmingCharacters(in: .whitespaces)
         if let expense {
-            expense.category = selectedCategory
+            expense.remoteCategoryID = selectedCategory.id
             expense.details = trimmedDetails.isEmpty ? nil : trimmedDetails
             expense.value = value
             expense.datetime = datetime
@@ -80,7 +86,7 @@ class ExpenseFormViewModel {
             expense.extraordinary = extraordinary
         } else {
             let newExpense = Expense(
-                category: selectedCategory,
+                remoteCategoryID: selectedCategory.id,
                 details: trimmedDetails.isEmpty ? nil : trimmedDetails,
                 value: value,
                 datetime: datetime,
@@ -100,13 +106,9 @@ class ExpenseFormViewModel {
         let name = poi?.name ?? ""
         locationName = name
         if !name.isEmpty {
-            selectedCategory = try? expenseRepository?.latestCategory(forLocationName: name)
+            let remoteCategoryID = try? expenseRepository?.latestCategoryID(forLocationName: name)
+            selectedCategory = categories.category(withID: remoteCategoryID)
         }
     }
 
-    private func fetchCategories() async {
-        guard let repository else { return }
-        let fetched = (try? await repository.fetchAll() as? [Category]) ?? []
-        categories = fetched.sorted { $0.name < $1.name }
-    }
 }

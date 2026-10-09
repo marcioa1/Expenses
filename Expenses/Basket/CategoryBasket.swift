@@ -50,9 +50,9 @@ final class CategoryBasket {
 
     // MARK: - Writes
 
-    func create(_ category: Category) async throws {
+    func create(_ draft: CategoryDraft) async throws {
         guard let categoryRepository else { return }
-        let created = try await categoryRepository.create(category)
+        let created = try await categoryRepository.create(draft)
         categories.append(created)
         sortCategories()
     }
@@ -74,7 +74,7 @@ final class CategoryBasket {
 
     // MARK: - Lookups
 
-    func category(withID id: UUID?) -> Category? {
+    func category(withID id: Int?) -> Category? {
         categories.category(withID: id)
     }
 

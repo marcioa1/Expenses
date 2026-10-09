@@ -19,9 +19,12 @@ class CategoryFormViewModel {
     var errorMessage: String?
 
     let category: Category?
+    private let categoryBasket: CategoryBasket
+
     /// All categories currently loaded; used for parent selection, subcategories and name validation.
-    let categories: [Category]
-    private let repository: any CategoryRepository
+    var categories: [Category] {
+        categoryBasket.categories
+    }
 
     var isEditing: Bool { category != nil }
 
@@ -75,15 +78,14 @@ class CategoryFormViewModel {
         "wrench.and.screwdriver.fill", "scissors", "paintbrush.fill", "camera.fill"
     ]
 
-    init(category: Category? = nil, categories: [Category], repository: any CategoryRepository) {
+    init(category: Category? = nil, categoryBasket: CategoryBasket) {
         self.category = category
-        self.categories = categories
-        self.repository = repository
+        self.categoryBasket = categoryBasket
         if let category {
             self.name = category.name
             self.icon = category.categoryIcon
             self.isActive = category.isActive
-            self.parent = categories.category(withID: category.parentID)
+            self.parent = categoryBasket.category(withID: category.parentID)
         }
     }
 
@@ -97,23 +99,29 @@ class CategoryFormViewModel {
         isDuplicateName = categories.contains { $0.name == trimmed && $0.id != category?.id }
     }
 
-    /// Creates or updates the category on the server.
+    /// Creates or updates the category on the server; the shared basket is updated on success.
     /// - Returns: `true` on success; on failure `errorMessage` is set.
     func save() async -> Bool {
         isSaving = true
         defer { isSaving = false }
 
-        var item = category ?? Category(name: "")
-        item.name = name.trimmingCharacters(in: .whitespaces)
-        item.categoryIcon = icon
-        item.isActive = isActive
-        item.parentID = parent?.id
+        let trimmedName = name.trimmingCharacters(in: .whitespaces)
 
         do {
-            if isEditing {
-                _ = try await repository.update(item)
+            if var item = category {
+                item.name = trimmedName
+                item.categoryIcon = icon
+                item.isActive = isActive
+                item.parentID = parent?.id
+                try await categoryBasket.update(item)
             } else {
-                _ = try await repository.create(item)
+                // New categories have no `id` yet; the server assigns it.
+                try await categoryBasket.create(CategoryDraft(
+                    name: trimmedName,
+                    isActive: isActive,
+                    categoryIcon: icon,
+                    parentID: parent?.id
+                ))
             }
             return true
         } catch {

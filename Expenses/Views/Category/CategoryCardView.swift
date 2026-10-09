@@ -6,10 +6,10 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct CategoryCardView: View {
     let category: Category
+    var subcategoryCount: Int = 0
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
@@ -33,8 +33,8 @@ struct CategoryCardView: View {
             .padding()
             .background(Color.secondary)
 
-            if !category.subcategories.isEmpty {
-                Text("\(category.subcategories.count)")
+            if subcategoryCount > 0 {
+                Text("\(subcategoryCount)")
                     .font(.caption2.bold())
                     .foregroundStyle(.white)
                     .padding(5)
@@ -49,7 +49,6 @@ struct CategoryCardView: View {
 }
 
 #Preview {
-    CategoryCardView(category: Category(name: "Food"))
-        .modelContainer(for: Category.self, inMemory: true)
+    CategoryCardView(category: Category(id: 1, name: "Food"), subcategoryCount: 2)
         .padding()
 }

@@ -10,6 +10,9 @@ import SwiftData
 import Foundation
 @testable import Expenses
 
+/// Disambiguates from the Objective-C runtime `Category` type exposed by Foundation.
+private typealias Category = Expenses.Category
+
 @MainActor
 struct ExpensesListViewModelTests {
 
@@ -18,7 +21,7 @@ struct ExpensesListViewModelTests {
     private func makeViewModel(expenses: [Expense] = [], categories: [Category] = []) -> ExpensesListViewModel {
         let vm = ExpensesListViewModel()
         vm.expenses = expenses
-        vm.categories = categories
+        vm.categoryBasket = CategoryBasket(categories: categories)
         return vm
     }
 
@@ -36,8 +39,8 @@ struct ExpensesListViewModelTests {
     }
 
     @Test func latestCategoryReturnsMatchFromMemory() async {
-        let food = Category(name: "Food")
-        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
+        let food = Category(id: 1, name: "Food")
+        let expense = Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks")
         let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "Starbucks")
@@ -45,10 +48,10 @@ struct ExpensesListViewModelTests {
     }
 
     @Test func latestCategoryReturnsMostRecentWhenMultipleMatchInMemory() async {
-        let food = Category(name: "Food")
-        let transport = Category(name: "Transport")
-        let older = Expense(categoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(categoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
+        let food = Category(id: 1, name: "Food")
+        let transport = Category(id: 2, name: "Transport")
+        let older = Expense(remoteCategoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(remoteCategoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
         let vm = makeViewModel(expenses: [older, newer], categories: [food, transport])
 
         let result = await vm.latestCategory(forLocationName: "Airport")
@@ -56,8 +59,8 @@ struct ExpensesListViewModelTests {
     }
 
     @Test func latestCategoryReturnsNilWhenLocationNotFoundInMemory() async {
-        let food = Category(name: "Food")
-        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
+        let food = Category(id: 1, name: "Food")
+        let expense = Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks")
         let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "McDonald's")
@@ -67,14 +70,14 @@ struct ExpensesListViewModelTests {
     // MARK: - Category filter
 
     @Test func filterBySelectedCategoryIncludesSubcategories() {
-        let food = Category(name: "Food")
-        let restaurants = Category(name: "Restaurants", parentID: food.id)
-        let transport = Category(name: "Transport")
+        let food = Category(id: 1, name: "Food")
+        let restaurants = Category(id: 3, name: "Restaurants", parentID: food.id)
+        let transport = Category(id: 2, name: "Transport")
         let vm = makeViewModel(
             expenses: [
-                Expense(categoryID: food.id, value: 10),
-                Expense(categoryID: restaurants.id, value: 20),
-                Expense(categoryID: transport.id, value: 30)
+                Expense(remoteCategoryID: food.id, value: 10),
+                Expense(remoteCategoryID: restaurants.id, value: 20),
+                Expense(remoteCategoryID: transport.id, value: 30)
             ],
             categories: [food, restaurants, transport]
         )
@@ -89,14 +92,14 @@ struct ExpensesListViewModelTests {
         let container = try makeContainer()
         let context = ModelContext(container)
 
-        let food = Category(name: "Food")
+        let food = Category(id: 1, name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -2, to: .now)!
-        let oldExpense = Expense(categoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
+        let oldExpense = Expense(remoteCategoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
         context.insert(oldExpense)
         try context.save()
 
         let vm = ExpensesListViewModel()
-        await vm.configure(modelContext: context, categoryRepository: MockCategoryDataProvider(categories: [food]))
+        await vm.configure(modelContext: context, categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food])))
         // expenses only holds current month — OldPlace won't be present
         #expect(vm.expenses.filter { $0.locationName == "OldPlace" }.isEmpty)
 

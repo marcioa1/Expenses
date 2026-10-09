@@ -25,12 +25,16 @@ class SummaryViewModel: MonthFilterable {
     }
     var loadingState: LoadingState = .loading
 
+    func category(for expense: Expense) -> Category? {
+        categoryBasket?.category(withID: expense.remoteCategoryID)
+    }
+
     init(previewState: LoadingState = .loading) {
         loadingState = previewState
     }
 
-    func configure(modelContext: ModelContext) async {
-        categoryBasket = CategoryBasket(categoryRepository: CategoryLocalDataProvider(modelContext: modelContext))
+    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
         expenseBasket = ExpenseBasket(expenseRepository: ExpenseLocalDataProvider(modelContext: modelContext))
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.refreshCategories() }
@@ -53,14 +57,16 @@ class SummaryViewModel: MonthFilterable {
     func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Double)], total: Double)] {
         guard let categoryBasket else { return [] }
         let filtered = monthFilter.filteredExpenses(from: self.expenses)
-        var parentMap: [UUID: (parent: Category, children: [UUID: Double])] = [:]
+        var parentMap: [Int: (parent: Category, children: [Int: Double])] = [:]
 
         for expense in filtered {
-            let root = categoryBasket.rootCategory(of: expense.category)
+            // Expenses whose category is not (or no longer) on the server are left out of the breakdown.
+            guard let category = categoryBasket.category(withID: expense.remoteCategoryID) else { continue }
+            let root = categoryBasket.rootCategory(of: category)
             if parentMap[root.id] == nil {
                 parentMap[root.id] = (parent: root, children: [:])
             }
-            parentMap[root.id]!.children[expense.category.id, default: 0] += expense.value
+            parentMap[root.id]!.children[category.id, default: 0] += expense.value
         }
 
         return parentMap.values
@@ -91,7 +97,7 @@ class SummaryViewModel: MonthFilterable {
     private func refreshCategories() async {
         guard let categoryBasket else { return }
         do {
-            try await categoryBasket.getAllCategories()
+            try await categoryBasket.loadIfNeeded()
             loadingState = .success
         } catch {
             loadingState = .failed

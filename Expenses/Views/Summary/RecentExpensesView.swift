@@ -9,6 +9,7 @@ import SwiftUI
 
 struct RecentExpensesView: View {
     let expenses: [Expense]
+    let categories: [Category]
     @Binding var expenseToEdit: Expense?
 
     var body: some View {
@@ -18,7 +19,7 @@ struct RecentExpensesView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(expenses) { expense in
-                    ExpenseRowView(expense: expense)
+                    ExpenseRowView(expense: expense, category: categories.category(withID: expense.remoteCategoryID))
                         .onTapGesture {
                             expenseToEdit = expense
                         }

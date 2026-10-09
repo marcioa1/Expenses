@@ -11,15 +11,15 @@ import Foundation
 ///
 /// Assumed contract (adjust `Endpoint` and `Category.CodingKeys` to match the real backend):
 /// - `GET    api/categories`       → `200 [Category]` (flat list)
-/// - `POST   api/categories`       body `Category` → `200/201 Category`
+/// - `POST   api/categories`       body `CategoryDraft` (no `id`) → `200/201 Category` with the new `id`
 /// - `PUT    api/categories/{id}`  body `Category` → `200 Category`
 /// - `DELETE api/categories/{id}`  → `2xx`
 struct CategoryRemoteDataProvider: CategoryRepository {
     private enum Endpoint {
         static let categories = "api/categories"
 
-        static func category(_ id: UUID) -> String {
-            "\(categories)/\(id.uuidString.lowercased())"
+        static func category(_ id: Int) -> String {
+            "\(categories)/\(id)"
         }
     }
 
@@ -34,8 +34,8 @@ struct CategoryRemoteDataProvider: CategoryRepository {
         return categories.sorted { $0.name < $1.name }
     }
 
-    func create(_ category: Category) async throws -> Category {
-        try await client.post(Endpoint.categories, body: category)
+    func create(_ draft: CategoryDraft) async throws -> Category {
+        try await client.post(Endpoint.categories, body: draft)
     }
 
     func update(_ category: Category) async throws -> Category {

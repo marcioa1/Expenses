@@ -10,12 +10,19 @@ import SwiftData
 import Foundation
 @testable import Expenses
 
+/// Disambiguates from the Objective-C runtime `Category` type exposed by Foundation.
+private typealias Category = Expenses.Category
+
 @MainActor
 struct ExpenseFormViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(for: Expense.self, configurations: config)
+    }
+
+    private func makeBasket(categories: [Category]) -> CategoryBasket {
+        CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: categories))
     }
 
     // MARK: - Initial state
@@ -29,10 +36,10 @@ struct ExpenseFormViewModelTests {
     }
 
     @Test func initWithExpenseIsEditing() async {
-        let food = Category(name: "Food")
-        let expense = Expense(categoryID: food.id, value: 25, locationName: "Starbucks")
+        let food = Category(id: 1, name: "Food")
+        let expense = Expense(remoteCategoryID: food.id, value: 25, locationName: "Starbucks")
         let vm = ExpenseFormViewModel(expense: expense)
-        await vm.configure(with: MockCategoryDataProvider(categories: [food]))
+        await vm.configure(with: makeBasket(categories: [food]))
         #expect(vm.isEditing)
         #expect(vm.selectedCategory?.name == "Food")
         #expect(vm.value == 25)
@@ -48,20 +55,20 @@ struct ExpenseFormViewModelTests {
 
     @Test func canSaveIsFalseWithCategoryButNoValue() {
         let vm = ExpenseFormViewModel()
-        vm.selectedCategory = Category(name: "Food")
+        vm.selectedCategory = Category(id: 1, name: "Food")
         #expect(!vm.canSave)
     }
 
     @Test func canSaveIsFalseWithZeroValue() {
         let vm = ExpenseFormViewModel()
-        vm.selectedCategory = Category(name: "Food")
+        vm.selectedCategory = Category(id: 1, name: "Food")
         vm.value = 0
         #expect(!vm.canSave)
     }
 
     @Test func canSaveIsTrueWithCategoryAndPositiveValue() {
         let vm = ExpenseFormViewModel()
-        vm.selectedCategory = Category(name: "Food")
+        vm.selectedCategory = Category(id: 1, name: "Food")
         vm.value = 10
         #expect(vm.canSave)
     }
@@ -69,36 +76,36 @@ struct ExpenseFormViewModelTests {
     // MARK: - configure(with:)
 
     @Test func configurePopulatesCategoriesSortedByName() async {
-        let transport = Category(name: "Transport")
-        let food = Category(name: "Food")
+        let transport = Category(id: 2, name: "Transport")
+        let food = Category(id: 1, name: "Food")
         let vm = ExpenseFormViewModel()
-        await vm.configure(with: MockCategoryDataProvider(categories: [transport, food]))
+        await vm.configure(with: makeBasket(categories: [transport, food]))
         #expect(vm.categories.map(\.name) == ["Food", "Transport"])
     }
 
     @Test func configureWithEmptyRepoLeavesEmptyCategories() async {
         let vm = ExpenseFormViewModel()
-        await vm.configure(with: MockCategoryDataProvider(categories: []))
+        await vm.configure(with: makeBasket(categories: []))
         #expect(vm.categories.isEmpty)
     }
 
     // MARK: - leafCategories
 
     @Test func leafCategoriesExcludesParents() async {
-        let parent = Category(name: "Food")
-        let child = Category(name: "Restaurants", parentID: parent.id)
+        let parent = Category(id: 1, name: "Food")
+        let child = Category(id: 3, name: "Restaurants", parentID: parent.id)
         let vm = ExpenseFormViewModel()
-        await vm.configure(with: MockCategoryDataProvider(categories: [parent, child]))
+        await vm.configure(with: makeBasket(categories: [parent, child]))
         let leaves = vm.leafCategories()
         #expect(leaves.count == 1)
         #expect(leaves.first?.name == "Restaurants")
     }
 
     @Test func leafCategoriesIncludesAllWhenNoneHaveChildren() async {
-        let food = Category(name: "Food")
-        let transport = Category(name: "Transport")
+        let food = Category(id: 1, name: "Food")
+        let transport = Category(id: 2, name: "Transport")
         let vm = ExpenseFormViewModel()
-        await vm.configure(with: MockCategoryDataProvider(categories: [food, transport]))
+        await vm.configure(with: makeBasket(categories: [food, transport]))
         #expect(vm.leafCategories().count == 2)
     }
 
@@ -114,8 +121,8 @@ struct ExpenseFormViewModelTests {
     @Test func latestCategoryIDReturnsCategoryForMatchingLocation() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
-        let food = Category(name: "Food")
-        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
+        let food = Category(id: 1, name: "Food")
+        context.insert(Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks"))
         try context.save()
 
         let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "Starbucks")
@@ -125,10 +132,10 @@ struct ExpenseFormViewModelTests {
     @Test func latestCategoryIDReturnsMostRecentForLocation() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
-        let food = Category(name: "Food")
-        let transport = Category(name: "Transport")
-        let older = Expense(categoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(categoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
+        let food = Category(id: 1, name: "Food")
+        let transport = Category(id: 2, name: "Transport")
+        let older = Expense(remoteCategoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(remoteCategoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
         context.insert(older)
         context.insert(newer)
         try context.save()
@@ -140,8 +147,8 @@ struct ExpenseFormViewModelTests {
     @Test func latestCategoryIDReturnsNilForUnknownLocation() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
-        let food = Category(name: "Food")
-        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
+        let food = Category(id: 1, name: "Food")
+        context.insert(Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks"))
         try context.save()
 
         let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "McDonald's")
@@ -151,9 +158,9 @@ struct ExpenseFormViewModelTests {
     @Test func latestCategoryIDSearchesAcrossAllMonths() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
-        let food = Category(name: "Food")
+        let food = Category(id: 1, name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -6, to: Date.now)!
-        context.insert(Expense(categoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace"))
+        context.insert(Expense(remoteCategoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace"))
         try context.save()
 
         let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "OldPlace")

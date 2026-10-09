@@ -10,6 +10,7 @@ import SwiftData
 
 struct MonthlyGridView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(CategoryBasket.self) private var categoryBasket
     @State private var viewModel = MonthlyGridViewModel()
     @State private var showingFilter = false
     @State private var selectedSort: SortOption? = nil
@@ -63,13 +64,13 @@ struct MonthlyGridView: View {
                 selectedSort: $selectedSort,
                 selectedExtra: $viewModel.selectedExtra,
                 selectedCategory: $viewModel.selectedCategory,
-                categories: viewModel.categories ?? []
+                categories: viewModel.categories
             )
             .presentationDetents([.height(280)])
             .presentationDragIndicator(.visible)
         }
         .task {
-            await viewModel.configure(modelContext: modelContext)
+            await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
         }
     }
 
@@ -124,14 +125,12 @@ struct MonthlyGridView: View {
 
 #Preview {
     let container = try! ModelContainer(
-        for: Expense.self, Category.self,
+        for: Expense.self,
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
-    let food = Category(name: "Food", categoryIcon: "fork.knife")
-    let transport = Category(name: "Transport", categoryIcon: "car.fill")
-    context.insert(food)
-    context.insert(transport)
+    let food = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
+    let transport = Category(id: 2, name: "Transport", categoryIcon: "car.fill")
 
     let calendar = Calendar.current
     let now = Date.now
@@ -143,12 +142,13 @@ struct MonthlyGridView: View {
             var comps = calendar.dateComponents([.year, .month], from: monthDate)
             comps.day = day
             if let date = calendar.date(from: comps) {
-                context.insert(Expense(category: food, value: Double.random(in: 10...200), datetime: date))
-                context.insert(Expense(category: transport, value: Double.random(in: 5...150), datetime: date))
+                context.insert(Expense(remoteCategoryID: food.id, value: Double.random(in: 10...200), datetime: date))
+                context.insert(Expense(remoteCategoryID: transport.id, value: Double.random(in: 5...150), datetime: date))
             }
         }
     }
 
     return MonthlyGridView()
         .modelContainer(container)
+        .environment(CategoryBasket(categories: [food, transport]))
 }

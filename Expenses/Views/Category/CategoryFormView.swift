@@ -11,20 +11,9 @@ struct CategoryFormView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var viewModel: CategoryFormViewModel
-    private let onSaved: () async -> Void
 
-    init(
-        category: Category? = nil,
-        categories: [Category],
-        repository: any CategoryRepository,
-        onSaved: @escaping () async -> Void = {}
-    ) {
-        _viewModel = State(initialValue: CategoryFormViewModel(
-            category: category,
-            categories: categories,
-            repository: repository
-        ))
-        self.onSaved = onSaved
+    init(category: Category? = nil, categoryBasket: CategoryBasket) {
+        _viewModel = State(initialValue: CategoryFormViewModel(category: category, categoryBasket: categoryBasket))
     }
 
     var body: some View {
@@ -97,7 +86,6 @@ struct CategoryFormView: View {
                     Button {
                         Task {
                             if await viewModel.save() {
-                                await onSaved()
                                 dismiss()
                             }
                         }
@@ -130,16 +118,16 @@ struct CategoryFormView: View {
 
 #if DEBUG
 #Preview("New") {
-    CategoryFormView(categories: [], repository: MockCategoryDataProvider())
+    CategoryFormView(categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider()))
 }
 
 #Preview("Edit") {
-    let food = Category(name: "Food", categoryIcon: "fork.knife")
-    let restaurants = Category(name: "Restaurants", categoryIcon: "cup.and.saucer.fill", parentID: food.id)
+    let food = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
+    let restaurants = Category(id: 2, name: "Restaurants", categoryIcon: "cup.and.saucer.fill", parentID: food.id)
+    let mock = MockCategoryDataProvider(categories: [food, restaurants])
     CategoryFormView(
         category: food,
-        categories: [food, restaurants],
-        repository: MockCategoryDataProvider(categories: [food, restaurants])
+        categoryBasket: CategoryBasket(categoryRepository: mock, categories: [food, restaurants])
     )
 }
 #endif

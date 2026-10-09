@@ -11,6 +11,7 @@ import SwiftData
 struct ExpenseFormView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(CategoryBasket.self) private var categoryBasket
 
     @State private var viewModel: ExpenseFormViewModel
     @FocusState private var isValueFocused: Bool
@@ -82,7 +83,7 @@ struct ExpenseFormView: View {
                 }
             }
             .task {
-                await viewModel.configure(modelContext: modelContext)
+                await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
             }
         }
     }
@@ -91,12 +92,13 @@ struct ExpenseFormView: View {
 #Preview {
     struct PreviewWrapper: View {
         var body: some View {
-            let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-            let context = container.mainContext
-            context.insert(Category(name: "Food", categoryIcon: "fork.knife"))
-            context.insert(Category(name: "Transport", categoryIcon: "car.fill"))
+            let container = try! ModelContainer(for: Expense.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
             return ExpenseFormView()
                 .modelContainer(container)
+                .environment(CategoryBasket(categories: [
+                    Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
+                    Category(id: 2, name: "Transport", categoryIcon: "car.fill")
+                ]))
         }
     }
     return PreviewWrapper()
