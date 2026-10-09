@@ -9,10 +9,12 @@ import SwiftUI
 
 struct ExpenseRowView: View {
     let expense: Expense
+    /// The expense's category, resolved from `expense.categoryID`; `nil` if it isn't loaded or no longer exists.
+    let category: Category?
 
     var body: some View {
         HStack {
-            Image(systemName: expense.category.categoryIcon)
+            Image(systemName: category?.categoryIcon ?? "questionmark.folder")
                 .font(.title3)
                 .categoryIconStyle(width: 32)
                 .overlay(alignment: .topTrailing) {
@@ -25,7 +27,7 @@ struct ExpenseRowView: View {
                 }
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(expense.category.name)
+                Text(category?.name ?? String(localized: "Uncategorized"))
                     .font(.headline)
 
                 if let details = expense.details, !details.isEmpty {
@@ -58,24 +60,24 @@ struct ExpenseRowView: View {
 #Preview("Regular") {
     let category = Category(name: "Food", categoryIcon: "fork.knife")
     let expense = Expense(
-        category: category,
+        categoryID: category.id,
         details: "Lunch at the office",
         value: 42.50,
         locationName: "Café Central"
     )
     List {
-        ExpenseRowView(expense: expense)
+        ExpenseRowView(expense: expense, category: category)
     }
 }
 
 #Preview("Extraordinary") {
     let category = Category(name: "Travel", categoryIcon: "airplane")
     let expense = Expense(
-        category: category,
+        categoryID: category.id,
         value: 1250.00,
         extraordinary: true
     )
     List {
-        ExpenseRowView(expense: expense)
+        ExpenseRowView(expense: expense, category: category)
     }
 }

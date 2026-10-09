@@ -15,7 +15,7 @@ struct ExpenseFormViewModelTests {
 
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Expense.self, Category.self, configurations: config)
+        return try ModelContainer(for: Expense.self, configurations: config)
     }
 
     // MARK: - Initial state
@@ -28,10 +28,11 @@ struct ExpenseFormViewModelTests {
         #expect(vm.details == "")
     }
 
-    @Test func initWithExpenseIsEditing() {
+    @Test func initWithExpenseIsEditing() async {
         let food = Category(name: "Food")
-        let expense = Expense(category: food, value: 25, locationName: "Starbucks")
+        let expense = Expense(categoryID: food.id, value: 25, locationName: "Starbucks")
         let vm = ExpenseFormViewModel(expense: expense)
+        await vm.configure(with: MockCategoryDataProvider(categories: [food]))
         #expect(vm.isEditing)
         #expect(vm.selectedCategory?.name == "Food")
         #expect(vm.value == 25)
@@ -85,7 +86,7 @@ struct ExpenseFormViewModelTests {
 
     @Test func leafCategoriesExcludesParents() async {
         let parent = Category(name: "Food")
-        let child = Category(name: "Restaurants", parent: parent)
+        let child = Category(name: "Restaurants", parentID: parent.id)
         let vm = ExpenseFormViewModel()
         await vm.configure(with: MockCategoryDataProvider(categories: [parent, child]))
         let leaves = vm.leafCategories()
@@ -101,66 +102,61 @@ struct ExpenseFormViewModelTests {
         #expect(vm.leafCategories().count == 2)
     }
 
-    // MARK: - ExpenseLocalDataProvider.latestCategory
+    // MARK: - ExpenseLocalDataProvider.latestCategoryID
     // These cover the DB path that ExpenseFormViewModel.resolveLocation() uses.
 
-    @Test func latestCategoryReturnsNilWhenNoExpenses() throws {
+    @Test func latestCategoryIDReturnsNilWhenNoExpenses() throws {
         let container = try makeContainer()
         let provider = ExpenseLocalDataProvider(modelContext: ModelContext(container))
-        #expect(try provider.latestCategory(forLocationName: "Starbucks") == nil)
+        #expect(try provider.latestCategoryID(forLocationName: "Starbucks") == nil)
     }
 
-    @Test func latestCategoryReturnsCategoryForMatchingLocation() throws {
+    @Test func latestCategoryIDReturnsCategoryForMatchingLocation() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let food = Category(name: "Food")
-        context.insert(food)
-        context.insert(Expense(category: food, value: 10, locationName: "Starbucks"))
+        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
         try context.save()
 
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategory(forLocationName: "Starbucks")
-        #expect(result?.name == "Food")
+        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "Starbucks")
+        #expect(result == food.id)
     }
 
-    @Test func latestCategoryReturnsMostRecentForLocation() throws {
+    @Test func latestCategoryIDReturnsMostRecentForLocation() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let food = Category(name: "Food")
         let transport = Category(name: "Transport")
-        let older = Expense(category: food, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(category: transport, value: 20, datetime: Date.now, locationName: "Airport")
-        context.insert(food)
-        context.insert(transport)
+        let older = Expense(categoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(categoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
         context.insert(older)
         context.insert(newer)
         try context.save()
 
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategory(forLocationName: "Airport")
-        #expect(result?.name == "Transport")
+        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "Airport")
+        #expect(result == transport.id)
     }
 
-    @Test func latestCategoryReturnsNilForUnknownLocation() throws {
+    @Test func latestCategoryIDReturnsNilForUnknownLocation() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let food = Category(name: "Food")
-        context.insert(food)
-        context.insert(Expense(category: food, value: 10, locationName: "Starbucks"))
+        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
         try context.save()
 
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategory(forLocationName: "McDonald's")
+        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "McDonald's")
         #expect(result == nil)
     }
 
-    @Test func latestCategorySearchesAcrossAllMonths() throws {
+    @Test func latestCategoryIDSearchesAcrossAllMonths() throws {
         let container = try makeContainer()
         let context = ModelContext(container)
         let food = Category(name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -6, to: Date.now)!
-        context.insert(food)
-        context.insert(Expense(category: food, value: 10, datetime: pastDate, locationName: "OldPlace"))
+        context.insert(Expense(categoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace"))
         try context.save()
 
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategory(forLocationName: "OldPlace")
-        #expect(result?.name == "Food")
+        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "OldPlace")
+        #expect(result == food.id)
     }
 }

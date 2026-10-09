@@ -6,21 +6,25 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct CategoryFormView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    @Query(sort: \Category.name) private var categories: [Category]
     @State private var viewModel: CategoryFormViewModel
+    private let onSaved: () async -> Void
 
-    init(category: Category? = nil) {
-        _viewModel = State(initialValue: CategoryFormViewModel(category: category))
-    }
-
-    private var availableParents: [Category] {
-        categories.filter { $0.id != viewModel.category?.id }
+    init(
+        category: Category? = nil,
+        categories: [Category],
+        repository: any CategoryRepository,
+        onSaved: @escaping () async -> Void = {}
+    ) {
+        _viewModel = State(initialValue: CategoryFormViewModel(
+            category: category,
+            categories: categories,
+            repository: repository
+        ))
+        self.onSaved = onSaved
     }
 
     var body: some View {
@@ -29,7 +33,7 @@ struct CategoryFormView: View {
                 Section {
                     TextField("Category name", text: $viewModel.name)
                         .onChange(of: viewModel.name) {
-                            viewModel.validateName(in: modelContext)
+                            viewModel.validateName()
                         }
                 } header: {
                     Text("Name")
@@ -62,16 +66,16 @@ struct CategoryFormView: View {
                 Section("Parent Category") {
                     Picker("Parent", selection: $viewModel.parent) {
                         Text("None").tag(nil as Category?)
-                        ForEach(availableParents) { category in
+                        ForEach(viewModel.availableParents) { category in
                             Label(category.name, systemImage: category.categoryIcon)
                                 .tag(category as Category?)
                         }
                     }
                 }
 
-                if let category = viewModel.category, !category.subcategories.isEmpty {
+                if !viewModel.subcategories.isEmpty {
                     Section("Subcategories") {
-                        ForEach(category.subcategories.sorted(by: { $0.name < $1.name })) { child in
+                        ForEach(viewModel.subcategories) { child in
                             Label(child.name, systemImage: child.categoryIcon)
                         }
                     }
@@ -90,26 +94,52 @@ struct CategoryFormView: View {
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        viewModel.save(in: modelContext)
-                        dismiss()
+                    Button {
+                        Task {
+                            if await viewModel.save() {
+                                await onSaved()
+                                dismiss()
+                            }
+                        }
+                    } label: {
+                        Text("Save")
+                            .opacity(viewModel.isSaving ? 0 : 1)
+                            .overlay {
+                                if viewModel.isSaving {
+                                    ProgressView()
+                                }
+                            }
                     }
                     .disabled(!viewModel.canSave)
                 }
+            }
+            .alert(
+                "Unable to save category",
+                isPresented: Binding(
+                    get: { viewModel.errorMessage != nil },
+                    set: { if !$0 { viewModel.errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel.errorMessage ?? "")
             }
         }
     }
 }
 
+#if DEBUG
 #Preview("New") {
-    CategoryFormView()
-        .modelContainer(for: Category.self, inMemory: true)
+    CategoryFormView(categories: [], repository: MockCategoryDataProvider())
 }
 
 #Preview("Edit") {
-    let container = try! ModelContainer(for: Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let category = Category(name: "Food", categoryIcon: "fork.knife")
-    container.mainContext.insert(category)
-    return CategoryFormView(category: category)
-        .modelContainer(container)
+    let food = Category(name: "Food", categoryIcon: "fork.knife")
+    let restaurants = Category(name: "Restaurants", categoryIcon: "cup.and.saucer.fill", parentID: food.id)
+    CategoryFormView(
+        category: food,
+        categories: [food, restaurants],
+        repository: MockCategoryDataProvider(categories: [food, restaurants])
+    )
 }
+#endif

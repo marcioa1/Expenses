@@ -15,15 +15,16 @@ struct ExpensesListViewModelTests {
 
     // MARK: - Helpers
 
-    private func makeViewModel(expenses: [Expense] = []) -> ExpensesListViewModel {
+    private func makeViewModel(expenses: [Expense] = [], categories: [Category] = []) -> ExpensesListViewModel {
         let vm = ExpensesListViewModel()
         vm.expenses = expenses
+        vm.categories = categories
         return vm
     }
 
     private func makeContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Expense.self, Category.self, configurations: config)
+        return try ModelContainer(for: Expense.self, configurations: config)
     }
 
     // MARK: - In-memory path
@@ -36,8 +37,8 @@ struct ExpensesListViewModelTests {
 
     @Test func latestCategoryReturnsMatchFromMemory() async {
         let food = Category(name: "Food")
-        let expense = Expense(category: food, value: 10, locationName: "Starbucks")
-        let vm = makeViewModel(expenses: [expense])
+        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
+        let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "Starbucks")
         #expect(result?.name == "Food")
@@ -46,9 +47,9 @@ struct ExpensesListViewModelTests {
     @Test func latestCategoryReturnsMostRecentWhenMultipleMatchInMemory() async {
         let food = Category(name: "Food")
         let transport = Category(name: "Transport")
-        let older = Expense(category: food, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(category: transport, value: 20, datetime: .now, locationName: "Airport")
-        let vm = makeViewModel(expenses: [older, newer])
+        let older = Expense(categoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(categoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
+        let vm = makeViewModel(expenses: [older, newer], categories: [food, transport])
 
         let result = await vm.latestCategory(forLocationName: "Airport")
         #expect(result?.name == "Transport")
@@ -56,11 +57,30 @@ struct ExpensesListViewModelTests {
 
     @Test func latestCategoryReturnsNilWhenLocationNotFoundInMemory() async {
         let food = Category(name: "Food")
-        let expense = Expense(category: food, value: 10, locationName: "Starbucks")
-        let vm = makeViewModel(expenses: [expense])
+        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
+        let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "McDonald's")
         #expect(result == nil)
+    }
+
+    // MARK: - Category filter
+
+    @Test func filterBySelectedCategoryIncludesSubcategories() {
+        let food = Category(name: "Food")
+        let restaurants = Category(name: "Restaurants", parentID: food.id)
+        let transport = Category(name: "Transport")
+        let vm = makeViewModel(
+            expenses: [
+                Expense(categoryID: food.id, value: 10),
+                Expense(categoryID: restaurants.id, value: 20),
+                Expense(categoryID: transport.id, value: 30)
+            ],
+            categories: [food, restaurants, transport]
+        )
+        vm.selectedCategory = food
+
+        #expect(vm.filteredExpenses().map(\.value).sorted() == [10, 20])
     }
 
     // MARK: - DB fallback path
@@ -71,13 +91,12 @@ struct ExpensesListViewModelTests {
 
         let food = Category(name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -2, to: .now)!
-        let oldExpense = Expense(category: food, value: 15, datetime: pastDate, locationName: "OldPlace")
-        context.insert(food)
+        let oldExpense = Expense(categoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
         context.insert(oldExpense)
         try context.save()
 
         let vm = ExpensesListViewModel()
-        await vm.configure(modelContext: context)
+        await vm.configure(modelContext: context, categoryRepository: MockCategoryDataProvider(categories: [food]))
         // expenses only holds current month — OldPlace won't be present
         #expect(vm.expenses.filter { $0.locationName == "OldPlace" }.isEmpty)
 

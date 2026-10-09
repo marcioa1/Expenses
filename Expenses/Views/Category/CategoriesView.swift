@@ -6,15 +6,13 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct CategoriesView: View {
-    @Environment(\.modelContext) private var modelContext
     @State private var viewModel = CategoriesViewModel()
-    private let dataProvider: (any DataProvider)?
+    private let repository: any CategoryRepository
 
-    init(dataProvider: (any DataProvider)? = nil) {
-        self.dataProvider = dataProvider
+    init(repository: any CategoryRepository = CategoryRemoteDataProvider()) {
+        self.repository = repository
     }
 
     private let columns = [
@@ -27,16 +25,16 @@ struct CategoriesView: View {
             ScrollView {
                 CategoryGridView(
                     categories: viewModel.rootCategories(),
+                    allCategories: viewModel.categories,
                     columns: columns,
                     onEdit: { category in viewModel.categoryToEdit = category }
                 )
             }
             .task {
-                if let dataProvider {
-                    await viewModel.configure(with: dataProvider)
-                } else {
-                    await viewModel.configure(modelContext: modelContext)
-                }
+                await viewModel.configure(with: repository)
+            }
+            .refreshable {
+                await viewModel.getAll()
             }
             .navigationTitle("Categories")
             .toolbar {
@@ -49,10 +47,19 @@ struct CategoriesView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showingForm) {
-                CategoryFormView()
+                CategoryFormView(
+                    categories: viewModel.categories,
+                    repository: repository,
+                    onSaved: { await viewModel.getAll() }
+                )
             }
             .sheet(item: $viewModel.categoryToEdit) { category in
-                CategoryFormView(category: category)
+                CategoryFormView(
+                    category: category,
+                    categories: viewModel.categories,
+                    repository: repository,
+                    onSaved: { await viewModel.getAll() }
+                )
             }
         }
     }
@@ -60,20 +67,23 @@ struct CategoriesView: View {
 
 struct CategoryGridView: View {
     let categories: [Category]
+    /// Full flat list, used to resolve each category's subcategories.
+    let allCategories: [Category]
     let columns: [GridItem]
     let onEdit: (Category) -> Void
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 16) {
             ForEach(categories) { category in
-                if category.subcategories.isEmpty {
+                let subcategories = allCategories.subcategories(of: category)
+                if subcategories.isEmpty {
                     CategoryCardView(category: category)
                         .onTapGesture { onEdit(category) }
                 } else {
                     NavigationLink {
-                        SubcategoriesView(category: category, onEdit: onEdit)
+                        SubcategoriesView(category: category, allCategories: allCategories, onEdit: onEdit)
                     } label: {
-                        CategoryCardView(category: category)
+                        CategoryCardView(category: category, subcategoryCount: subcategories.count)
                     }
                     .buttonStyle(.plain)
                 }
@@ -85,6 +95,7 @@ struct CategoryGridView: View {
 
 struct SubcategoriesView: View {
     let category: Category
+    let allCategories: [Category]
     let onEdit: (Category) -> Void
 
     private let columns = [
@@ -92,14 +103,11 @@ struct SubcategoriesView: View {
         GridItem(.flexible())
     ]
 
-    private var sortedSubcategories: [Category] {
-        category.subcategories.sorted { $0.name < $1.name }
-    }
-
     var body: some View {
         ScrollView {
             CategoryGridView(
-                categories: sortedSubcategories,
+                categories: allCategories.subcategories(of: category),
+                allCategories: allCategories,
                 columns: columns,
                 onEdit: onEdit
             )
@@ -119,6 +127,6 @@ struct SubcategoriesView: View {
 
 #if DEBUG
 #Preview {
-    CategoriesView(dataProvider: MockCategoryDataProvider())
+    CategoriesView(repository: MockCategoryDataProvider())
 }
 #endif

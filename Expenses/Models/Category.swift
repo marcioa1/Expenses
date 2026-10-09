@@ -6,25 +6,72 @@
 //
 
 import Foundation
-import SwiftData
 
-@Model
-final class Category: Identifiable {
-    var id: UUID = UUID()
-    @Attribute(.unique) var name: String
+/// A category as exchanged with the backend (`api/categories`).
+///
+/// The server sends a flat list where each item points to its parent through
+/// `parent_id`; the hierarchy is rebuilt on the client with the helpers in the
+/// `Array<Category>` extension below.
+struct Category: Identifiable, Hashable, Codable {
+    var id: UUID
+    var name: String
     var isActive: Bool
     var categoryIcon: String
-    var parent: Category?
-    @Relationship(deleteRule: .cascade, inverse: \Category.parent)
-    var subcategories: [Category] = []
-    @Relationship(deleteRule: .deny, inverse: \Expense.category)
-    var expenses: [Expense] = []
+    var parentID: UUID?
 
-    init(id: UUID = UUID(), name: String, isActive: Bool = true, categoryIcon: String = "folder", parent: Category? = nil) {
+    enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case isActive = "is_active"
+        case categoryIcon = "category_icon"
+        case parentID = "parent_id"
+    }
+
+    init(id: UUID = UUID(), name: String, isActive: Bool = true, categoryIcon: String = "folder", parentID: UUID? = nil) {
         self.id = id
         self.name = name
         self.isActive = isActive
         self.categoryIcon = categoryIcon
-        self.parent = parent
+        self.parentID = parentID
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(isActive, forKey: .isActive)
+        try container.encode(categoryIcon, forKey: .categoryIcon)
+        // Always send `parent_id` (as `null` when absent) so an update can clear the parent.
+        try container.encode(parentID, forKey: .parentID)
+    }
+}
+
+// MARK: - Hierarchy helpers
+
+extension Array where Element == Category {
+    func category(withID id: UUID?) -> Category? {
+        guard let id else { return nil }
+        return first { $0.id == id }
+    }
+
+    /// Direct children of `category`, sorted by name.
+    func subcategories(of category: Category) -> [Category] {
+        filter { $0.parentID == category.id }.sorted { $0.name < $1.name }
+    }
+
+    /// Top-most ancestor of `category` (the category itself when it has no parent).
+    func root(of category: Category) -> Category {
+        var current = category
+        var visited: Set<UUID> = [category.id]
+        // `visited` guards against a malformed cycle coming from the server.
+        while let parent = self.category(withID: current.parentID), visited.insert(parent.id).inserted {
+            current = parent
+        }
+        return current
+    }
+
+    /// IDs of `category` and its direct subcategories; used by the category filters.
+    func ids(matching category: Category) -> Set<UUID> {
+        Set([category.id] + subcategories(of: category).map(\.id))
     }
 }

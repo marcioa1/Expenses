@@ -6,19 +6,33 @@
 //
 
 import Foundation
-import SwiftData
 import Observation
 
+@MainActor
 @Observable
 class CategoryFormViewModel {
     var name: String = ""
     var icon: String = "folder"
     var isActive: Bool = true
     var parent: Category?
+    var isSaving = false
+    var errorMessage: String?
 
     let category: Category?
+    /// All categories currently loaded; used for parent selection, subcategories and name validation.
+    let categories: [Category]
+    private let repository: any CategoryRepository
 
     var isEditing: Bool { category != nil }
+
+    var availableParents: [Category] {
+        categories.filter { $0.id != category?.id }
+    }
+
+    var subcategories: [Category] {
+        guard let category else { return [] }
+        return categories.subcategories(of: category)
+    }
 
     var nameError: String? {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
@@ -29,7 +43,7 @@ class CategoryFormViewModel {
 
     var canSave: Bool {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
-        return !trimmed.isEmpty && !isDuplicateName
+        return !trimmed.isEmpty && !isDuplicateName && !isSaving
     }
 
     private var isDuplicateName: Bool = false
@@ -61,43 +75,50 @@ class CategoryFormViewModel {
         "wrench.and.screwdriver.fill", "scissors", "paintbrush.fill", "camera.fill"
     ]
 
-    init(category: Category? = nil) {
+    init(category: Category? = nil, categories: [Category], repository: any CategoryRepository) {
         self.category = category
+        self.categories = categories
+        self.repository = repository
         if let category {
             self.name = category.name
             self.icon = category.categoryIcon
             self.isActive = category.isActive
-            self.parent = category.parent
+            self.parent = categories.category(withID: category.parentID)
         }
     }
 
-    func validateName(in context: ModelContext) {
+    func validateName() {
         let trimmed = name.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else {
             isDuplicateName = false
             return
         }
-        let predicate = #Predicate<Category> { $0.name == trimmed }
-        let descriptor = FetchDescriptor(predicate: predicate)
-        let existing = (try? context.fetch(descriptor)) ?? []
         // Allow keeping the same name when editing
-        if let category, existing.count == 1, existing.first?.id == category.id {
-            isDuplicateName = false
-        } else {
-            isDuplicateName = !existing.isEmpty
-        }
+        isDuplicateName = categories.contains { $0.name == trimmed && $0.id != category?.id }
     }
 
-    func save(in context: ModelContext) {
-        let trimmedName = name.trimmingCharacters(in: .whitespaces)
-        if let category {
-            category.name = trimmedName
-            category.categoryIcon = icon
-            category.isActive = isActive
-            category.parent = parent
-        } else {
-            let newCategory = Category(name: trimmedName, isActive: isActive, categoryIcon: icon, parent: parent)
-            context.insert(newCategory)
+    /// Creates or updates the category on the server.
+    /// - Returns: `true` on success; on failure `errorMessage` is set.
+    func save() async -> Bool {
+        isSaving = true
+        defer { isSaving = false }
+
+        var item = category ?? Category(name: "")
+        item.name = name.trimmingCharacters(in: .whitespaces)
+        item.categoryIcon = icon
+        item.isActive = isActive
+        item.parentID = parent?.id
+
+        do {
+            if isEditing {
+                _ = try await repository.update(item)
+            } else {
+                _ = try await repository.create(item)
+            }
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
         }
     }
 }

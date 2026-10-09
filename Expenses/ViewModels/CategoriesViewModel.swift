@@ -7,31 +7,28 @@
 
 import Foundation
 import Observation
-import SwiftData
 
+@MainActor
 @Observable
 class CategoriesViewModel {
     var showingForm = false
     var categoryToEdit: Category?
-    var categories: [Category] = []
-    private var repository: (any DataProvider)?
+    private(set) var categoryBasket: CategoryBasket?
 
-    func configure(modelContext: ModelContext) async {
-        repository = CategoryLocalDataProvider(modelContext: modelContext)
-        await getAll()
+    var categories: [Category] {
+        categoryBasket?.categories ?? []
     }
 
-    func configure(with repository: any DataProvider) async {
-        self.repository = repository
-        await getAll()
+    func configure(with categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
+        try? await categoryBasket.loadIfNeeded()
     }
 
     func rootCategories() -> [Category] {
-        categories.filter { $0.parent == nil }
+        categories.filter { $0.parentID == nil }
     }
 
-    private func getAll() async {
-        guard let repository else { return }
-        categories = (try? await repository.fetchAll() as? [Category]) ?? []
+    func refresh() async {
+        try? await categoryBasket?.getAllCategories()
     }
 }

@@ -9,10 +9,10 @@
 import Foundation
 
 @MainActor
-final class MockCategoryDataProvider: DataProvider {
+final class MockCategoryDataProvider: CategoryRepository {
     typealias Item = Category
 
-    private let categories: [Category]
+    private var categories: [Category]
 
     init() {
         self.categories = [
@@ -30,6 +30,22 @@ final class MockCategoryDataProvider: DataProvider {
 
     func fetchAll() async throws -> [Category] {
         categories
+    }
+
+    func create(_ category: Category) async throws -> Category {
+        categories.append(category)
+        return category
+    }
+
+    func update(_ category: Category) async throws -> Category {
+        if let index = categories.firstIndex(where: { $0.id == category.id }) {
+            categories[index] = category
+        }
+        return category
+    }
+
+    func delete(_ category: Category) async throws {
+        categories.removeAll { $0.id == category.id }
     }
 }
 #endif
