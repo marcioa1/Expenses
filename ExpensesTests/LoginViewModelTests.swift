@@ -45,7 +45,7 @@ struct LoginViewModelTests {
 
         let session = await vm.login()
 
-        #expect(session?.email == "user@example.com")
+        #expect(session?.accessToken == "mock-access-token")
         #expect(service.signInCallCount == 1)
         #expect(vm.errorMessage == nil)
         #expect(vm.isLoading == false)

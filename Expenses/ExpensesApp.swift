@@ -26,13 +26,17 @@ struct ExpensesApp: App {
 
     let authService: AuthService = RemoteAuthService(baseURL: AppConfiguration.apiBaseURL)
 
+    private let sessionStore = SessionStore()
+
     /// `nil` until the user signs in; drives whether the login screen or the main tabs are shown.
-    @State private var session: AuthSession?
+    /// Restored from the Keychain on launch so the user stays signed in.
+    @State private var session: AuthSession? = SessionStore().load()
 
     var body: some Scene {
         WindowGroup {
             if session == nil {
                 LoginView(authService: authService) { newSession in
+                    try? sessionStore.save(newSession)
                     session = newSession
                 }
             } else {
