@@ -14,7 +14,7 @@ struct CategoryCardView: View {
     var body: some View {
         ZStack(alignment: .topTrailing) {
             VStack(spacing: 8) {
-                Image(systemName: category.categoryIcon)
+                Image(systemName: category.icon)
                     .font(.title)
                     .categoryIconStyle()
 

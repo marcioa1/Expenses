@@ -28,7 +28,7 @@ struct ExpenseFormView: View {
                     Picker("Category", selection: $viewModel.selectedCategory) {
                         Text("Select a category").tag(nil as Category?)
                         ForEach(viewModel.leafCategories()) { category in
-                            Label(category.name, systemImage: category.categoryIcon)
+                            Label(category.name, systemImage: category.icon)
                                 .tag(category as Category?)
                         }
                     }
@@ -96,8 +96,8 @@ struct ExpenseFormView: View {
             return ExpenseFormView()
                 .modelContainer(container)
                 .environment(CategoryBasket(categories: [
-                    Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
-                    Category(id: 2, name: "Transport", categoryIcon: "car.fill")
+                    Category(id: 1, name: "Food", icon: "fork.knife"),
+                    Category(id: 2, name: "Transport", icon: "car.fill")
                 ]))
         }
     }

@@ -60,9 +60,9 @@ struct FilterView: View {
     @Previewable @State var selectedCategory: Category? = nil
     
     let categories = [
-        Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
-        Category(id: 2, name: "Transport", categoryIcon: "car"),
-        Category(id: 3, name: "Shopping", categoryIcon: "cart"),
+        Category(id: 1, name: "Food", icon: "fork.knife"),
+        Category(id: 2, name: "Transport", icon: "car"),
+        Category(id: 3, name: "Shopping", icon: "cart"),
     ]
     
     FilterView(
@@ -79,9 +79,9 @@ struct FilterView: View {
     @Previewable @State var selectedCategory: Category? = nil
 
     let categories = [
-        Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
-        Category(id: 2, name: "Transport", categoryIcon: "car"),
-        Category(id: 3, name: "Shopping", categoryIcon: "cart"),
+        Category(id: 1, name: "Food", icon: "fork.knife"),
+        Category(id: 2, name: "Transport", icon: "car"),
+        Category(id: 3, name: "Shopping", icon: "cart"),
     ]
 
     FilterView(

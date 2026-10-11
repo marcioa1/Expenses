@@ -16,11 +16,11 @@ final class MockCategoryDataProvider: CategoryRepository {
 
     init() {
         self.categories = [
-            Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
-            Category(id: 2, name: "Transport", categoryIcon: "car.fill"),
-            Category(id: 3, name: "Entertainment", categoryIcon: "gamecontroller.fill"),
-            Category(id: 4, name: "Health", categoryIcon: "heart.fill"),
-            Category(id: 5, name: "Shopping", categoryIcon: "bag.fill")
+            Category(id: 1, name: "Food", icon: "fork.knife"),
+            Category(id: 2, name: "Transport", icon: "car.fill"),
+            Category(id: 3, name: "Entertainment", icon: "gamecontroller.fill"),
+            Category(id: 4, name: "Health", icon: "heart.fill"),
+            Category(id: 5, name: "Shopping", icon: "bag.fill")
         ]
     }
 
@@ -39,7 +39,7 @@ final class MockCategoryDataProvider: CategoryRepository {
             id: nextID,
             name: draft.name,
             isActive: draft.isActive,
-            categoryIcon: draft.categoryIcon,
+            icon: draft.icon,
             parentID: draft.parentID
         )
         categories.append(category)

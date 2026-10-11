@@ -129,8 +129,8 @@ struct MonthlyGridView: View {
         configurations: ModelConfiguration(isStoredInMemoryOnly: true)
     )
     let context = container.mainContext
-    let food = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
-    let transport = Category(id: 2, name: "Transport", categoryIcon: "car.fill")
+    let food = Category(id: 1, name: "Food", icon: "fork.knife")
+    let transport = Category(id: 2, name: "Transport", icon: "car.fill")
 
     let calendar = Calendar.current
     let now = Date.now

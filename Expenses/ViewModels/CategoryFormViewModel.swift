@@ -11,7 +11,7 @@ import Observation
 @MainActor
 @Observable
 class CategoryFormViewModel {
-    var name: String = ""
+    var name: String = "Carro"
     var icon: String = "folder"
     var isActive: Bool = true
     var parent: Category?
@@ -83,7 +83,7 @@ class CategoryFormViewModel {
         self.categoryBasket = categoryBasket
         if let category {
             self.name = category.name
-            self.icon = category.categoryIcon
+            self.icon = category.icon
             self.isActive = category.isActive
             self.parent = categoryBasket.category(withID: category.parentID)
         }
@@ -110,7 +110,7 @@ class CategoryFormViewModel {
         do {
             if var item = category {
                 item.name = trimmedName
-                item.categoryIcon = icon
+                item.icon = icon
                 item.isActive = isActive
                 item.parentID = parent?.id
                 try await categoryBasket.update(item)
@@ -119,7 +119,7 @@ class CategoryFormViewModel {
                 try await categoryBasket.create(CategoryDraft(
                     name: trimmedName,
                     isActive: isActive,
-                    categoryIcon: icon,
+                    icon: icon,
                     parentID: parent?.id
                 ))
             }

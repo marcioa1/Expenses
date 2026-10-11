@@ -14,7 +14,7 @@ struct ExpenseRowView: View {
 
     var body: some View {
         HStack {
-            Image(systemName: category?.categoryIcon ?? "questionmark.folder")
+            Image(systemName: category?.icon ?? "questionmark.folder")
                 .font(.title3)
                 .categoryIconStyle(width: 32)
                 .overlay(alignment: .topTrailing) {
@@ -58,7 +58,7 @@ struct ExpenseRowView: View {
 }
 
 #Preview("Regular") {
-    let category = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
+    let category = Category(id: 1, name: "Food", icon: "fork.knife")
     let expense = Expense(
         remoteCategoryID: category.id,
         details: "Lunch at the office",
@@ -71,7 +71,7 @@ struct ExpenseRowView: View {
 }
 
 #Preview("Extraordinary") {
-    let category = Category(id: 2, name: "Travel", categoryIcon: "airplane")
+    let category = Category(id: 2, name: "Travel", icon: "airplane")
     let expense = Expense(
         remoteCategoryID: category.id,
         value: 1250.00,

@@ -22,7 +22,7 @@ struct CategoryBreakdownView: View {
                     DisclosureGroup {
                         ForEach(group.subtotals, id: \.category.id) { item in
                             HStack {
-                                Image(systemName: item.category.categoryIcon)
+                                Image(systemName: item.category.icon)
                                     .categoryIconStyle(width: 24)
 
                                 Text(item.category.name)
@@ -37,7 +37,7 @@ struct CategoryBreakdownView: View {
                         }
                     } label: {
                         HStack {
-                            Image(systemName: group.parent.categoryIcon)
+                            Image(systemName: group.parent.icon)
                                 .categoryIconStyle()
 
                             Text(group.parent.name)

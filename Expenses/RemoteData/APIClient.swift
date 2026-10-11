@@ -151,8 +151,23 @@ struct APIClient {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.httpBody = try encoder.encode(body)
         }
+
+        #if DEBUG
+        logRequest(request)
+        #endif
         return request
     }
+
+    #if DEBUG
+    /// Prints the outgoing request (method, URL and JSON body) to the console in debug builds.
+    /// The `Authorization` header is intentionally left out so the access token never hits the logs.
+    private func logRequest(_ request: URLRequest) {
+        let method = request.httpMethod ?? "?"
+        let url = request.url?.absoluteString ?? "?"
+        let body = request.httpBody.map { String(decoding: $0, as: UTF8.self) } ?? "<no body>"
+        print("[APIClient] \(method) \(url)\n[APIClient] Body: \(body)")
+    }
+    #endif
 
     /// Performs the request and maps transport / HTTP failures to `APIError`.
     private func send(_ request: URLRequest) async throws -> Data {

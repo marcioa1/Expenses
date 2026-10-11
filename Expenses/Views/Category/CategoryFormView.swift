@@ -56,7 +56,7 @@ struct CategoryFormView: View {
                     Picker("Parent", selection: $viewModel.parent) {
                         Text("None").tag(nil as Category?)
                         ForEach(viewModel.availableParents) { category in
-                            Label(category.name, systemImage: category.categoryIcon)
+                            Label(category.name, systemImage: category.icon)
                                 .tag(category as Category?)
                         }
                     }
@@ -65,7 +65,7 @@ struct CategoryFormView: View {
                 if !viewModel.subcategories.isEmpty {
                     Section("Subcategories") {
                         ForEach(viewModel.subcategories) { child in
-                            Label(child.name, systemImage: child.categoryIcon)
+                            Label(child.name, systemImage: child.icon)
                         }
                     }
                 }
@@ -122,8 +122,8 @@ struct CategoryFormView: View {
 }
 
 #Preview("Edit") {
-    let food = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
-    let restaurants = Category(id: 2, name: "Restaurants", categoryIcon: "cup.and.saucer.fill", parentID: food.id)
+    let food = Category(id: 1, name: "Food", icon: "fork.knife")
+    let restaurants = Category(id: 2, name: "Restaurants", icon: "cup.and.saucer.fill", parentID: food.id)
     let mock = MockCategoryDataProvider(categories: [food, restaurants])
     CategoryFormView(
         category: food,

@@ -16,22 +16,22 @@ struct Category: Identifiable, Hashable, Codable {
     var id: Int
     var name: String
     var isActive: Bool
-    var categoryIcon: String
+    var icon: String
     var parentID: Int?
 
     enum CodingKeys: String, CodingKey {
         case id
         case name
         case isActive = "is_active"
-        case categoryIcon = "category_icon"
+        case icon
         case parentID = "parent_id"
     }
 
-    init(id: Int, name: String, isActive: Bool = true, categoryIcon: String = "folder", parentID: Int? = nil) {
+    init(id: Int, name: String, isActive: Bool = true, icon: String = "folder", parentID: Int? = nil) {
         self.id = id
         self.name = name
         self.isActive = isActive
-        self.categoryIcon = categoryIcon
+        self.icon = icon
         self.parentID = parentID
     }
 
@@ -40,7 +40,7 @@ struct Category: Identifiable, Hashable, Codable {
         try container.encode(id, forKey: .id)
         try container.encode(name, forKey: .name)
         try container.encode(isActive, forKey: .isActive)
-        try container.encode(categoryIcon, forKey: .categoryIcon)
+        try container.encode(icon, forKey: .icon)
         // Always send `parent_id` (as `null` when absent) so an update can clear the parent.
         try container.encode(parentID, forKey: .parentID)
     }
@@ -50,13 +50,13 @@ struct Category: Identifiable, Hashable, Codable {
 struct CategoryDraft: Encodable, Equatable {
     var name: String
     var isActive: Bool = true
-    var categoryIcon: String = "folder"
+    var icon: String = "folder"
     var parentID: Int?
 
     enum CodingKeys: String, CodingKey {
         case name
         case isActive = "is_active"
-        case categoryIcon = "category_icon"
+        case icon
         case parentID = "parent_id"
     }
 
@@ -64,7 +64,7 @@ struct CategoryDraft: Encodable, Equatable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
         try container.encode(isActive, forKey: .isActive)
-        try container.encode(categoryIcon, forKey: .categoryIcon)
+        try container.encode(icon, forKey: .icon)
         try container.encode(parentID, forKey: .parentID)
     }
 }

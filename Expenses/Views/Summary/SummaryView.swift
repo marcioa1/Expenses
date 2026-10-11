@@ -82,8 +82,8 @@ struct SummaryView: View {
 #Preview("Success") {
     let container = try! ModelContainer(for: Expense.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     let context = container.mainContext
-    let food = Category(id: 1, name: "Food", categoryIcon: "fork.knife")
-    let transport = Category(id: 2, name: "Transport", categoryIcon: "car.fill")
+    let food = Category(id: 1, name: "Food", icon: "fork.knife")
+    let transport = Category(id: 2, name: "Transport", icon: "car.fill")
     context.insert(Expense(remoteCategoryID: food.id, details: "Lunch", value: 25.50))
     context.insert(Expense(remoteCategoryID: food.id, details: "Groceries", value: 87.30))
     context.insert(Expense(remoteCategoryID: transport.id, value: 12.00))

@@ -89,9 +89,9 @@ struct DailyChartView: View {
 //    let container = try! ModelContainer(for: Expense.self, Category.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
 //    let context = container.mainContext
 //    
-//    let food = Category(name: "Food", categoryIcon: "fork.knife")
-//    let transport = Category(name: "Transport", categoryIcon: "car.fill")
-//    let shopping = Category(name: "Shopping", categoryIcon: "bag.fill")
+//    let food = Category(name: "Food", icon: "fork.knife")
+//    let transport = Category(name: "Transport", icon: "car.fill")
+//    let shopping = Category(name: "Shopping", icon: "bag.fill")
 //    context.insert(food)
 //    context.insert(transport)
 //    context.insert(shopping)

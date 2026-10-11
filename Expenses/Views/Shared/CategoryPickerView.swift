@@ -17,7 +17,7 @@ struct CategoryPickerView: View {
             Picker("Category", selection: $selectedCategory) {
                 Text("All").tag(nil as Category?)
                 ForEach(categories.filter { $0.isActive }) { category in
-                    Label(category.name, systemImage: category.categoryIcon)
+                    Label(category.name, systemImage: category.icon)
                         .tag(category as Category?)
                         .frame(maxWidth: .infinity)
                 }
@@ -33,11 +33,11 @@ struct CategoryPickerView: View {
     @Previewable @State var selectedCategory: Category? = nil
 
     let categories = [
-        Category(id: 1, name: "Food", categoryIcon: "fork.knife"),
-        Category(id: 2, name: "Transport", categoryIcon: "car"),
-        Category(id: 3, name: "Estacionamento", categoryIcon: "car"),
-        Category(id: 4, name: "Shopping", categoryIcon: "cart"),
-        Category(id: 5, name: "Health", categoryIcon: "heart"),
+        Category(id: 1, name: "Food", icon: "fork.knife"),
+        Category(id: 2, name: "Transport", icon: "car"),
+        Category(id: 3, name: "Estacionamento", icon: "car"),
+        Category(id: 4, name: "Shopping", icon: "cart"),
+        Category(id: 5, name: "Health", icon: "heart"),
     ]
 
     CategoryPickerView(selectedCategory: $selectedCategory, categories: categories)
