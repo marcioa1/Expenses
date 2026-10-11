@@ -10,7 +10,7 @@ import Foundation
 /// `CategoryRepository` backed by the HTTP JSON API.
 ///
 /// Assumed contract (adjust `Endpoint` and `Category.CodingKeys` to match the real backend):
-/// - `GET    api/categories`       → `200 [{ "category": Category }]` (flat list)
+/// - `GET    api/categories`       → `200 { "categories": [Category] }`
 /// - `POST   api/categories`       body `{ "category": CategoryDraft }` (no `id`) → `200/201 { "category": Category }` with the new `id`
 /// - `PUT    api/categories/{id}`  body `{ "category": Category }` → `200 { "category": Category }`
 /// - `DELETE api/categories/{id}`  → `2xx`
@@ -30,8 +30,8 @@ struct CategoryRemoteDataProvider: CategoryRepository {
     }
 
     func fetchAll() async throws -> [Category] {
-        let items: [CategoryBody<Category>] = try await client.get(Endpoint.categories)
-        return items.map(\.category).sorted { $0.name < $1.name }
+        let response: CategoriesBody = try await client.get(Endpoint.categories)
+        return response.categories.sorted { $0.name < $1.name }
     }
 
     func create(_ draft: CategoryDraft) async throws -> Category {
@@ -61,4 +61,9 @@ fileprivate struct CategoryBody<Wrapped> {
 
 extension CategoryBody: Encodable where Wrapped: Encodable {}
 extension CategoryBody: Decodable where Wrapped: Decodable {}
+
+/// Root `categories` key used by the backend for the list: `{ "categories": [ { ... } ] }`.
+fileprivate struct CategoriesBody: Decodable {
+    let categories: [Category]
+}
 
