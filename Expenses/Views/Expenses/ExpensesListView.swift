@@ -15,6 +15,9 @@ struct ExpensesListView: View {
     @State private var viewModel = ExpensesListViewModel()
     @State private var showingFilter = false
 
+    /// Called when the user taps the logout button.
+    var onLogout: () -> Void = {}
+
     private var hasActiveFilters: Bool {
         viewModel.selectedCategory != nil ||
         viewModel.selectedExtra != .all ||
@@ -54,6 +57,12 @@ struct ExpensesListView: View {
                         Image(systemName: hasActiveFilters
                               ? "line.3.horizontal.decrease.circle.fill"
                               : "line.3.horizontal.decrease.circle")
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        onLogout()
                     }
                 }
 

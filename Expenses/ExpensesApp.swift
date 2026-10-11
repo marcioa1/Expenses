@@ -44,7 +44,7 @@ struct ExpensesApp: App {
             } else {
                 TabView {
                     Tab("Expenses", systemImage: "list.bullet") {
-                        ExpensesListView()
+                        ExpensesListView(onLogout: logout)
                     }
                     Tab("Categories", systemImage: "square.grid.2x2") {
                         CategoriesView()
@@ -64,5 +64,16 @@ struct ExpensesApp: App {
             }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    /// Clears the local session immediately, then tells the server to revoke the token.
+    /// The server call is best-effort: the user is logged out locally even if it fails.
+    private func logout() {
+        guard let currentSession = session else { return }
+        sessionStore.clear()
+        session = nil
+        Task {
+            try? await authService.signOut(currentSession)
+        }
     }
 }
