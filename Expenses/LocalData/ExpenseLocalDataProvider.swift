@@ -43,6 +43,6 @@ struct ExpenseLocalDataProvider: DataProvider {
             sortBy: [SortDescriptor(\.datetime, order: .reverse)]
         )
         descriptor.fetchLimit = 1
-        return try modelContext.fetch(descriptor).first?.remoteCategoryID
+        return try modelContext.fetch(descriptor).first?.categoryID
     }
 }

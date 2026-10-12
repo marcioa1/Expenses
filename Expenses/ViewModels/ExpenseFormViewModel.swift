@@ -49,7 +49,7 @@ class ExpenseFormViewModel {
         self.categoryBasket = categoryBasket
         try? await categoryBasket.loadIfNeeded()
         if let expense {
-            selectedCategory = categoryBasket.category(withID: expense.remoteCategoryID)
+            selectedCategory = categoryBasket.category(withID: expense.categoryID)
         }
     }
 
@@ -59,7 +59,7 @@ class ExpenseFormViewModel {
 
     init(expense: Expense? = nil) {
         self.expense = expense
-        // `selectedCategory` is resolved from `expense.remoteCategoryID` once categories are fetched.
+        // `selectedCategory` is resolved from `expense.categoryID` once categories are fetched.
         if let expense {
             self.details = expense.details ?? ""
             self.value = expense.value
@@ -76,7 +76,7 @@ class ExpenseFormViewModel {
         let trimmedDetails = details.trimmingCharacters(in: .whitespaces)
         let trimmedLocation = locationName.trimmingCharacters(in: .whitespaces)
         if let expense {
-            expense.remoteCategoryID = selectedCategory.id
+            expense.categoryID = selectedCategory.id
             expense.details = trimmedDetails.isEmpty ? nil : trimmedDetails
             expense.value = value
             expense.datetime = datetime
@@ -86,7 +86,7 @@ class ExpenseFormViewModel {
             expense.extraordinary = extraordinary
         } else {
             let newExpense = Expense(
-                remoteCategoryID: selectedCategory.id,
+                categoryID: selectedCategory.id,
                 details: trimmedDetails.isEmpty ? nil : trimmedDetails,
                 value: value,
                 datetime: datetime,
@@ -106,8 +106,8 @@ class ExpenseFormViewModel {
         let name = poi?.name ?? ""
         locationName = name
         if !name.isEmpty {
-            let remoteCategoryID = try? expenseRepository?.latestCategoryID(forLocationName: name)
-            selectedCategory = categories.category(withID: remoteCategoryID)
+            let categoryID = try? expenseRepository?.latestCategoryID(forLocationName: name)
+            selectedCategory = categories.category(withID: categoryID)
         }
     }
 

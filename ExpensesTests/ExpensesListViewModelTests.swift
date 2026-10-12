@@ -40,7 +40,7 @@ struct ExpensesListViewModelTests {
 
     @Test func latestCategoryReturnsMatchFromMemory() async {
         let food = Category(id: 1, name: "Food")
-        let expense = Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks")
+        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
         let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "Starbucks")
@@ -50,8 +50,8 @@ struct ExpensesListViewModelTests {
     @Test func latestCategoryReturnsMostRecentWhenMultipleMatchInMemory() async {
         let food = Category(id: 1, name: "Food")
         let transport = Category(id: 2, name: "Transport")
-        let older = Expense(remoteCategoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(remoteCategoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
+        let older = Expense(categoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(categoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
         let vm = makeViewModel(expenses: [older, newer], categories: [food, transport])
 
         let result = await vm.latestCategory(forLocationName: "Airport")
@@ -60,7 +60,7 @@ struct ExpensesListViewModelTests {
 
     @Test func latestCategoryReturnsNilWhenLocationNotFoundInMemory() async {
         let food = Category(id: 1, name: "Food")
-        let expense = Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks")
+        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
         let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "McDonald's")
@@ -75,9 +75,9 @@ struct ExpensesListViewModelTests {
         let transport = Category(id: 2, name: "Transport")
         let vm = makeViewModel(
             expenses: [
-                Expense(remoteCategoryID: food.id, value: 10),
-                Expense(remoteCategoryID: restaurants.id, value: 20),
-                Expense(remoteCategoryID: transport.id, value: 30)
+                Expense(categoryID: food.id, value: 10),
+                Expense(categoryID: restaurants.id, value: 20),
+                Expense(categoryID: transport.id, value: 30)
             ],
             categories: [food, restaurants, transport]
         )
@@ -94,7 +94,7 @@ struct ExpensesListViewModelTests {
 
         let food = Category(id: 1, name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -2, to: .now)!
-        let oldExpense = Expense(remoteCategoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
+        let oldExpense = Expense(categoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
         context.insert(oldExpense)
         try context.save()
 

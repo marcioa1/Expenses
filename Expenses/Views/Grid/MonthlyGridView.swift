@@ -142,8 +142,8 @@ struct MonthlyGridView: View {
             var comps = calendar.dateComponents([.year, .month], from: monthDate)
             comps.day = day
             if let date = calendar.date(from: comps) {
-                context.insert(Expense(remoteCategoryID: food.id, value: Double.random(in: 10...200), datetime: date))
-                context.insert(Expense(remoteCategoryID: transport.id, value: Double.random(in: 5...150), datetime: date))
+                context.insert(Expense(categoryID: food.id, value: Double.random(in: 10...200), datetime: date))
+                context.insert(Expense(categoryID: transport.id, value: Double.random(in: 5...150), datetime: date))
             }
         }
     }

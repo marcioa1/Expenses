@@ -26,7 +26,7 @@ class SummaryViewModel: MonthFilterable {
     var loadingState: LoadingState = .loading
 
     func category(for expense: Expense) -> Category? {
-        categoryBasket?.category(withID: expense.remoteCategoryID)
+        categoryBasket?.category(withID: expense.categoryID)
     }
 
     init(previewState: LoadingState = .loading) {
@@ -61,7 +61,7 @@ class SummaryViewModel: MonthFilterable {
 
         for expense in filtered {
             // Expenses whose category is not (or no longer) on the server are left out of the breakdown.
-            guard let category = categoryBasket.category(withID: expense.remoteCategoryID) else { continue }
+            guard let category = categoryBasket.category(withID: expense.categoryID) else { continue }
             let root = categoryBasket.rootCategory(of: category)
             if parentMap[root.id] == nil {
                 parentMap[root.id] = (parent: root, children: [:])

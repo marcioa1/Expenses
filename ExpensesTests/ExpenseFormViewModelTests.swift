@@ -37,7 +37,7 @@ struct ExpenseFormViewModelTests {
 
     @Test func initWithExpenseIsEditing() async {
         let food = Category(id: 1, name: "Food")
-        let expense = Expense(remoteCategoryID: food.id, value: 25, locationName: "Starbucks")
+        let expense = Expense(categoryID: food.id, value: 25, locationName: "Starbucks")
         let vm = ExpenseFormViewModel(expense: expense)
         await vm.configure(with: makeBasket(categories: [food]))
         #expect(vm.isEditing)
@@ -122,7 +122,7 @@ struct ExpenseFormViewModelTests {
         let container = try makeContainer()
         let context = ModelContext(container)
         let food = Category(id: 1, name: "Food")
-        context.insert(Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks"))
+        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
         try context.save()
 
         let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "Starbucks")
@@ -134,8 +134,8 @@ struct ExpenseFormViewModelTests {
         let context = ModelContext(container)
         let food = Category(id: 1, name: "Food")
         let transport = Category(id: 2, name: "Transport")
-        let older = Expense(remoteCategoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(remoteCategoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
+        let older = Expense(categoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(categoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
         context.insert(older)
         context.insert(newer)
         try context.save()
@@ -148,7 +148,7 @@ struct ExpenseFormViewModelTests {
         let container = try makeContainer()
         let context = ModelContext(container)
         let food = Category(id: 1, name: "Food")
-        context.insert(Expense(remoteCategoryID: food.id, value: 10, locationName: "Starbucks"))
+        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
         try context.save()
 
         let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "McDonald's")
@@ -160,7 +160,7 @@ struct ExpenseFormViewModelTests {
         let context = ModelContext(container)
         let food = Category(id: 1, name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -6, to: Date.now)!
-        context.insert(Expense(remoteCategoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace"))
+        context.insert(Expense(categoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace"))
         try context.save()
 
         let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "OldPlace")

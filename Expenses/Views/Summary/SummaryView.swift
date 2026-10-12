@@ -84,9 +84,9 @@ struct SummaryView: View {
     let context = container.mainContext
     let food = Category(id: 1, name: "Food", icon: "fork.knife")
     let transport = Category(id: 2, name: "Transport", icon: "car.fill")
-    context.insert(Expense(remoteCategoryID: food.id, details: "Lunch", value: 25.50))
-    context.insert(Expense(remoteCategoryID: food.id, details: "Groceries", value: 87.30))
-    context.insert(Expense(remoteCategoryID: transport.id, value: 12.00))
+    context.insert(Expense(categoryID: food.id, details: "Lunch", value: 25.50))
+    context.insert(Expense(categoryID: food.id, details: "Groceries", value: 87.30))
+    context.insert(Expense(categoryID: transport.id, value: 12.00))
     return SummaryView()
         .modelContainer(container)
         .environment(CategoryBasket(categories: [food, transport]))

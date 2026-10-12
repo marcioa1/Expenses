@@ -28,7 +28,7 @@ class MonthlyGridViewModel {
         var result = expenses
         if let selectedCategory {
             let ids = categories.ids(matching: selectedCategory)
-            result = self.expenses.filter { ids.contains($0.remoteCategoryID) }
+            result = self.expenses.filter { ids.contains($0.categoryID) }
         }
         switch selectedExtra {
         case .all:

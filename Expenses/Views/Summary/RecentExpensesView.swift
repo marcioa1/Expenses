@@ -19,7 +19,7 @@ struct RecentExpensesView: View {
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(expenses) { expense in
-                    ExpenseRowView(expense: expense, category: categories.category(withID: expense.remoteCategoryID))
+                    ExpenseRowView(expense: expense, category: categories.category(withID: expense.categoryID))
                         .onTapGesture {
                             expenseToEdit = expense
                         }

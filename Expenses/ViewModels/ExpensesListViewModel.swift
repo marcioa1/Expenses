@@ -41,7 +41,7 @@ class ExpensesListViewModel: MonthFilterable {
         var result = expenses
         if let selectedCategory {
             let ids = categories.ids(matching: selectedCategory)
-            result = result.filter { ids.contains($0.remoteCategoryID) }
+            result = result.filter { ids.contains($0.categoryID) }
         }
         
         switch selectedSort {
@@ -79,7 +79,7 @@ class ExpensesListViewModel: MonthFilterable {
     }
     
     func category(for expense: Expense) -> Category? {
-        categories.category(withID: expense.remoteCategoryID)
+        categories.category(withID: expense.categoryID)
     }
 
     func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
@@ -104,12 +104,12 @@ class ExpensesListViewModel: MonthFilterable {
     }
     
     func latestCategory(forLocationName locationName: String) async -> Category? {
-        let remoteCategoryID = expenses
+        let categoryID = expenses
             .filter({ $0.locationName == locationName })
             .sorted(by: { $0.datetime > $1.datetime })
-            .first?.remoteCategoryID
+            .first?.categoryID
             ?? (try? expenseRepository?.latestCategoryID(forLocationName: locationName))
-        return categories.category(withID: remoteCategoryID)
+        return categories.category(withID: categoryID)
     }
 
     func refreshExpenses() async {
