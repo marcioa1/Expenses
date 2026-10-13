@@ -7,6 +7,38 @@
 
 import Foundation
 
+extension JSONDecoder.DateDecodingStrategy {
+    /// ISO 8601 dates with or without fractional seconds and timezone.
+    ///
+    /// The backend sends some timestamps without an offset (e.g. `"2026-10-10T20:26:33"`, an Ecto
+    /// `naive_datetime`), which the built-in `.iso8601` strategy rejects; those are read as UTC.
+    static var flexibleISO8601: Self {
+        .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let string = try container.decode(String.self)
+            guard let date = Date.parseISO8601(string) else {
+                throw DecodingError.dataCorruptedError(
+                    in: container, debugDescription: "Unsupported date format: \(string)"
+                )
+            }
+            return date
+        }
+    }
+}
+
+extension Date {
+    /// Parses an ISO 8601 date; a value without a timezone is treated as UTC.
+    static func parseISO8601(_ string: String) -> Date? {
+        let style = Date.ISO8601FormatStyle()
+        return (try? style.parse(string)) ?? (try? style.parse(string + "Z"))
+    }
+}
+
+extension Notification.Name {
+    /// Posted by `APIClient` when an authenticated request gets `401 Unauthorized`.
+    static let sessionExpired = Notification.Name("APIClient.sessionExpired")
+}
+
 enum APIError: LocalizedError, Equatable {
     case unauthorized
     case notFound
@@ -74,7 +106,7 @@ struct APIClient {
         self.encoder = encoder
 
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = .flexibleISO8601
         self.decoder = decoder
     }
 
@@ -167,6 +199,14 @@ struct APIClient {
         let body = request.httpBody.map { String(decoding: $0, as: UTF8.self) } ?? "<no body>"
         print("[APIClient] \(method) \(url)\n[APIClient] Body: \(body)")
     }
+
+    /// Prints the status code and raw response body in debug builds, to check the backend's JSON
+    /// against the app's models (wrapper keys, field names, date and decimal formats).
+    private func logResponse(_ response: HTTPURLResponse, data: Data) {
+        let url = response.url?.absoluteString ?? "?"
+        let body = data.isEmpty ? "<no body>" : String(decoding: data, as: UTF8.self)
+        print("[APIClient] ← \(response.statusCode) \(url)\n[APIClient] Response: \(body)")
+    }
     #endif
 
     /// Performs the request and maps transport / HTTP failures to `APIError`.
@@ -185,10 +225,21 @@ struct APIClient {
             throw APIError.invalidResponse
         }
 
+        #if DEBUG
+        logResponse(httpResponse, data: data)
+        #endif
+
         switch httpResponse.statusCode {
         case 200..<300:
             return data
-        case 401, 403:
+        case 401:
+            // Only a request that carried a token means the session expired;
+            // the app listens for this and returns to the login screen.
+            if request.value(forHTTPHeaderField: "Authorization") != nil {
+                NotificationCenter.default.post(name: .sessionExpired, object: nil)
+            }
+            throw APIError.unauthorized
+        case 403:
             throw APIError.unauthorized
         case 404:
             throw APIError.notFound
