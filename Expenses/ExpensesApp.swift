@@ -35,16 +35,16 @@ struct ExpensesApp: App {
                         ExpensesListView(onLogout: logout)
                     }
                     Tab("Categories", systemImage: "square.grid.2x2") {
-                        CategoriesView()
+                        CategoriesView(onLogout: logout)
                     }
                     Tab("Summary", systemImage: "chart.pie.fill") {
-                        SummaryView()
+                        SummaryView(onLogout: logout)
                     }
                     Tab("Chart", systemImage: "chart.bar.fill") {
-                        DailyChartView()
+                        DailyChartView(onLogout: logout)
                     }
                     Tab("Grid", systemImage: "tablecells") {
-                        MonthlyGridView()
+                        MonthlyGridView(onLogout: logout)
                     }
                 }
                 .tint(.orange)

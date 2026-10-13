@@ -13,7 +13,11 @@ struct SummaryView: View {
     @Environment(ExpenseBasket.self) private var expenseBasket
     @State private var viewModel: SummaryViewModel
 
-    init() {
+    /// Called when the user taps the logout button.
+    var onLogout: () -> Void = {}
+
+    init(onLogout: @escaping () -> Void = {}) {
+        self.onLogout = onLogout
         _viewModel = State(wrappedValue: SummaryViewModel())
     }
 
@@ -44,6 +48,12 @@ struct SummaryView: View {
                     ToolbarTotalView(
                         totalAmount: viewModel.totalAmount(from: viewModel.expenses)
                     )
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        onLogout()
+                    }
                 }
             }
             .sheet(item: $viewModel.expenseToEdit) { expense in

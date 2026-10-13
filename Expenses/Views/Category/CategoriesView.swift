@@ -11,6 +11,9 @@ struct CategoriesView: View {
     @Environment(CategoryBasket.self) private var categoryBasket
     @State private var viewModel = CategoriesViewModel()
 
+    /// Called when the user taps the logout button.
+    var onLogout: () -> Void = {}
+
     private let columns = [
         GridItem(.flexible()),
         GridItem(.flexible())
@@ -34,6 +37,12 @@ struct CategoriesView: View {
             }
             .navigationTitle("Categories")
             .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        onLogout()
+                    }
+                }
+
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         viewModel.showingForm = true

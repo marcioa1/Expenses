@@ -16,6 +16,9 @@ struct DailyChartView: View {
     @State private var showingFilter = false
     @State private var selectedSort: SortOption? = nil
 
+    /// Called when the user taps the logout button.
+    var onLogout: () -> Void = {}
+
     private var hasActiveFilters: Bool {
         viewModel.selectedCategory != nil ||
         viewModel.selectedExtra != .all
@@ -35,6 +38,11 @@ struct DailyChartView: View {
                           : "line.3.horizontal.decrease.circle.fill")
                     .font(.title3)
                 }
+                Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                    onLogout()
+                }
+                .labelStyle(.iconOnly)
+                .font(.title3)
             }
             .padding(.horizontal)
             .padding(.vertical, 12)
