@@ -27,7 +27,7 @@ struct ExpenseFormView: View {
                 Section("Category") {
                     Picker("Category", selection: $viewModel.selectedCategory) {
                         Text("Select a category").tag(nil as Category?)
-                        ForEach(viewModel.leafCategories()) { category in
+                        ForEach(viewModel.selectableCategories()) { category in
                             Label(category.name, systemImage: category.icon)
                                 .tag(category as Category?)
                         }

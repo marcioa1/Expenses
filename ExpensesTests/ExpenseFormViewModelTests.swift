@@ -115,6 +115,27 @@ struct ExpenseFormViewModelTests {
 
     }
 
+    // MARK: - selectableCategories
+
+    @Test func selectableCategoriesExcludesInactiveForNewExpense() async {
+        let food = Category(id: 1, name: "Food", isActive: true)
+        let transport = Category(id: 2, name: "Transport", isActive: false)
+        let vm = ExpenseFormViewModel()
+        await vm.configure(with: makeBasket(categories: [food, transport]))
+        #expect(vm.selectableCategories().map(\.id) == [1])
+    }
+
+    @Test func selectableCategoriesKeepsInactiveCategoryOfEditedExpense() async {
+        let food = Category(id: 1, name: "Food", isActive: true)
+        let transport = Category(id: 2, name: "Transport", isActive: false)
+        let other = Category(id: 3, name: "Other", isActive: false)
+        let expense = Expense(id: 1, categoryID: transport.id, value: 10)
+        let vm = ExpenseFormViewModel(expense: expense)
+        await vm.configure(with: makeBasket(categories: [food, transport, other]))
+        #expect(vm.selectableCategories().map(\.id) == [1, 2])
+        #expect(vm.selectedCategory?.id == transport.id)
+    }
+
     // MARK: - ExpenseBasket.latestCategoryID
     // These cover the lookup that ExpenseFormViewModel.resolveLocation() uses.
 

@@ -62,6 +62,15 @@ class ExpenseFormViewModel {
         categories.filter{ $0.isActive }
     }
 
+    /// Leaf categories the user can pick. New expenses only see active categories;
+    /// when editing, the expense's current category stays visible even if it has
+    /// since been deactivated, so the picker selection remains valid.
+    func selectableCategories() -> [Category] {
+        leafCategories().filter { category in
+            category.isActive || (isEditing && category.id == expense?.categoryID)
+        }
+    }
+
     init(expense: Expense? = nil) {
         self.expense = expense
         // `selectedCategory` is resolved from `expense.categoryID` once categories are fetched.
@@ -114,7 +123,9 @@ class ExpenseFormViewModel {
         locationName = name
         if !name.isEmpty {
             let categoryID = expenseBasket?.latestCategoryID(forLocationName: name)
-            selectedCategory = categories.category(withID: categoryID)
+            if let suggested = categories.category(withID: categoryID), suggested.isActive {
+                selectedCategory = suggested
+            }
         }
     }
 
