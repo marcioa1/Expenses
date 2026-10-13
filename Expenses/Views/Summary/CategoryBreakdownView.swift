@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct CategoryBreakdownView: View {
-    let expensesByParent: [(parent: Category, subtotals: [(category: Category, total: Double)], total: Double)]
-    let totalAmount: Double
+    let expensesByParent: [(parent: Category, subtotals: [(category: Category, total: Decimal)], total: Decimal)]
+    let totalAmount: Decimal
     let currencyCode: String
 
     var body: some View {
@@ -49,7 +49,7 @@ struct CategoryBreakdownView: View {
                                     .font(.headline)
 
                                 if totalAmount > 0 {
-                                    Text("\(Int((group.total / totalAmount) * 100))%")
+                                    Text("\(Int(truncating: (group.total / totalAmount * 100) as NSDecimalNumber))%")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }

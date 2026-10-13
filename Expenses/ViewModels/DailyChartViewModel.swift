@@ -10,7 +10,12 @@ import Foundation
 struct DailyTotal: Identifiable {
     let id = UUID()
     let day: Int
-    let total: Double
+    let total: Decimal
+
+    /// Bar height for Swift Charts; only used for drawing, sums stay in `Decimal`.
+    var plotTotal: Double {
+        Double(truncating: total as NSDecimalNumber)
+    }
 }
 
 @MainActor
@@ -23,10 +28,17 @@ class DailyChartViewModel: MonthFilterable {
     var categories: [Category] {
         categoryBasket?.categories ?? []
     }
+    private var expenseBasket: ExpenseBasket?
+    var expenses: [Expense] {
+        expenseBasket?.expenses ?? []
+    }
 
-    func configure(categoryBasket: CategoryBasket) async {
+    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
-        try? await categoryBasket.loadIfNeeded()
+        self.expenseBasket = expenseBasket
+        async let categories: Void? = try? categoryBasket.loadIfNeeded()
+        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
+        _ = await (categories, expenses)
     }
 
     var selectedMonthIndex: Int {
@@ -57,7 +69,7 @@ class DailyChartViewModel: MonthFilterable {
         case .regular:
             result = result.filter { !$0.extraordinary}
         }
-        var dailyMap: [Int: Double] = [:]
+        var dailyMap: [Int: Decimal] = [:]
         for expense in result {
             let day = calendar.component(.day, from: expense.datetime)
             dailyMap[day, default: 0] += expense.value

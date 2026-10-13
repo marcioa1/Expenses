@@ -6,12 +6,11 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @MainActor
 struct SummaryView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(CategoryBasket.self) private var categoryBasket
+    @Environment(ExpenseBasket.self) private var expenseBasket
     @State private var viewModel: SummaryViewModel
 
     init() {
@@ -51,7 +50,7 @@ struct SummaryView: View {
                 ExpenseFormView(expense: expense)
             }
             .task {
-                await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
+                await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
             }
         }
     }
@@ -75,19 +74,19 @@ struct SummaryView: View {
 
 #Preview("Error") {
     SummaryView(viewModel: SummaryViewModel(previewState: .failed))
-        .modelContainer(for: [Expense.self], inMemory: true)
         .environment(CategoryBasket())
+        .environment(ExpenseBasket())
 }
 
 #Preview("Success") {
-    let container = try! ModelContainer(for: Expense.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let context = container.mainContext
     let food = Category(id: 1, name: "Food", icon: "fork.knife")
     let transport = Category(id: 2, name: "Transport", icon: "car.fill")
-    context.insert(Expense(categoryID: food.id, details: "Lunch", value: 25.50))
-    context.insert(Expense(categoryID: food.id, details: "Groceries", value: 87.30))
-    context.insert(Expense(categoryID: transport.id, value: 12.00))
+    let expenses = [
+        Expense(id: 1, categoryID: food.id, details: "Lunch", value: 25.50),
+        Expense(id: 2, categoryID: food.id, details: "Groceries", value: 87.30),
+        Expense(id: 3, categoryID: transport.id, value: 12.00)
+    ]
     return SummaryView()
-        .modelContainer(container)
         .environment(CategoryBasket(categories: [food, transport]))
+        .environment(ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: expenses)))
 }

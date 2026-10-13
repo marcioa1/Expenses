@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct ToolbarTotalView: View {
-    let totalAmount: Double
+    let totalAmount: Decimal
 
     var body: some View {
         Text(totalAmount, format: .currency(code: CurrencyHelper.code))

@@ -35,7 +35,7 @@ class MonthFilter {
         return allExpenses.filter { $0.datetime >= start && $0.datetime <= end }
     }
 
-    func totalAmount(from allExpenses: [Expense]) -> Double {
+    func totalAmount(from allExpenses: [Expense]) -> Decimal {
         filteredExpenses(from: allExpenses).reduce(0) { $0 + $1.value }
     }
 }

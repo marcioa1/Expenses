@@ -6,7 +6,6 @@
 //
 
 import Testing
-import SwiftData
 import Foundation
 @testable import Expenses
 
@@ -15,11 +14,6 @@ private typealias Category = Expenses.Category
 
 @MainActor
 struct ExpenseFormViewModelTests {
-
-    private func makeContainer() throws -> ModelContainer {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Expense.self, configurations: config)
-    }
 
     private func makeBasket(categories: [Category]) -> CategoryBasket {
         CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: categories))
@@ -37,7 +31,7 @@ struct ExpenseFormViewModelTests {
 
     @Test func initWithExpenseIsEditing() async {
         let food = Category(id: 1, name: "Food")
-        let expense = Expense(categoryID: food.id, value: 25, locationName: "Starbucks")
+        let expense = Expense(id: 1, categoryID: food.id, value: 25, locationName: "Starbucks")
         let vm = ExpenseFormViewModel(expense: expense)
         await vm.configure(with: makeBasket(categories: [food]))
         #expect(vm.isEditing)
@@ -109,61 +103,68 @@ struct ExpenseFormViewModelTests {
         #expect(vm.leafCategories().count == 2)
     }
 
-    // MARK: - ExpenseLocalDataProvider.latestCategoryID
-    // These cover the DB path that ExpenseFormViewModel.resolveLocation() uses.
+    // MARK: - ExpenseBasket.latestCategoryID
+    // These cover the lookup that ExpenseFormViewModel.resolveLocation() uses.
 
-    @Test func latestCategoryIDReturnsNilWhenNoExpenses() throws {
-        let container = try makeContainer()
-        let provider = ExpenseLocalDataProvider(modelContext: ModelContext(container))
-        #expect(try provider.latestCategoryID(forLocationName: "Starbucks") == nil)
+    @Test func latestCategoryIDReturnsNilWhenNoExpenses() {
+        let basket = ExpenseBasket()
+        #expect(basket.latestCategoryID(forLocationName: "Starbucks") == nil)
     }
 
-    @Test func latestCategoryIDReturnsCategoryForMatchingLocation() throws {
-        let container = try makeContainer()
-        let context = ModelContext(container)
+    @Test func latestCategoryIDReturnsCategoryForMatchingLocation() {
         let food = Category(id: 1, name: "Food")
-        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
-        try context.save()
-
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "Starbucks")
-        #expect(result == food.id)
+        let basket = ExpenseBasket(expenses: [
+            Expense(id: 1, categoryID: food.id, value: 10, locationName: "Starbucks")
+        ])
+        #expect(basket.latestCategoryID(forLocationName: "Starbucks") == food.id)
     }
 
-    @Test func latestCategoryIDReturnsMostRecentForLocation() throws {
-        let container = try makeContainer()
-        let context = ModelContext(container)
+    @Test func latestCategoryIDReturnsMostRecentForLocation() {
         let food = Category(id: 1, name: "Food")
         let transport = Category(id: 2, name: "Transport")
-        let older = Expense(categoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(categoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
-        context.insert(older)
-        context.insert(newer)
-        try context.save()
-
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "Airport")
-        #expect(result == transport.id)
+        let older = Expense(id: 1, categoryID: food.id, value: 10, datetime: Date.now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(id: 2, categoryID: transport.id, value: 20, datetime: Date.now, locationName: "Airport")
+        let basket = ExpenseBasket(expenses: [older, newer])
+        #expect(basket.latestCategoryID(forLocationName: "Airport") == transport.id)
     }
 
-    @Test func latestCategoryIDReturnsNilForUnknownLocation() throws {
-        let container = try makeContainer()
-        let context = ModelContext(container)
+    @Test func latestCategoryIDReturnsNilForUnknownLocation() {
         let food = Category(id: 1, name: "Food")
-        context.insert(Expense(categoryID: food.id, value: 10, locationName: "Starbucks"))
-        try context.save()
-
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "McDonald's")
-        #expect(result == nil)
+        let basket = ExpenseBasket(expenses: [
+            Expense(id: 1, categoryID: food.id, value: 10, locationName: "Starbucks")
+        ])
+        #expect(basket.latestCategoryID(forLocationName: "McDonald's") == nil)
     }
 
-    @Test func latestCategoryIDSearchesAcrossAllMonths() throws {
-        let container = try makeContainer()
-        let context = ModelContext(container)
+    @Test func latestCategoryIDSearchesAcrossAllMonths() {
         let food = Category(id: 1, name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -6, to: Date.now)!
-        context.insert(Expense(categoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace"))
-        try context.save()
+        let basket = ExpenseBasket(expenses: [
+            Expense(id: 1, categoryID: food.id, value: 10, datetime: pastDate, locationName: "OldPlace")
+        ])
+        #expect(basket.latestCategoryID(forLocationName: "OldPlace") == food.id)
+    }
 
-        let result = try ExpenseLocalDataProvider(modelContext: context).latestCategoryID(forLocationName: "OldPlace")
-        #expect(result == food.id)
+    // MARK: - save
+
+    @Test func saveWhenEditingUpdatesExpenseInBasket() async throws {
+        let food = Category(id: 1, name: "Food")
+        let transport = Category(id: 2, name: "Transport")
+        let expense = Expense(id: 7, categoryID: food.id, details: "Lunch", value: 25)
+        let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [expense]))
+        try await expenseBasket.loadIfNeeded()
+
+        let vm = ExpenseFormViewModel(expense: expense)
+        await vm.configure(categoryBasket: makeBasket(categories: [food, transport]), expenseBasket: expenseBasket)
+        vm.selectedCategory = transport
+        vm.value = 40
+        vm.details = "  Taxi  "
+        try await vm.save()
+
+        let saved = try #require(expenseBasket.expense(withID: 7))
+        #expect(saved.categoryID == transport.id)
+        #expect(saved.value == 40)
+        #expect(saved.details == "Taxi")
+        #expect(expenseBasket.expenses.count == 1)
     }
 }

@@ -6,12 +6,11 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct ExpensesListView: View {
     
-    @Environment(\.modelContext) private var modelContext
     @Environment(CategoryBasket.self) private var categoryBasket
+    @Environment(ExpenseBasket.self) private var expenseBasket
     @State private var viewModel = ExpensesListViewModel()
     @State private var showingFilter = false
 
@@ -84,19 +83,27 @@ struct ExpensesListView: View {
                 .presentationDetents([.height(280)])
                 .presentationDragIndicator(.visible)
             }
-            .sheet(isPresented: $viewModel.showingForm, onDismiss: {
-                Task { await viewModel.refreshExpenses() }
-            }) {
+            // The form writes through the shared basket, so the list updates without a refresh.
+            .sheet(isPresented: $viewModel.showingForm) {
                 ExpenseFormView()
             }
-            .sheet(item: $viewModel.expenseToEdit, onDismiss: {
-                Task { await viewModel.refreshExpenses() }
-            }) { expense in
+            .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)
+            }
+            .alert(
+                "Something went wrong",
+                isPresented: Binding(
+                    get: { viewModel.errorMessage != nil },
+                    set: { if !$0 { viewModel.errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(viewModel.errorMessage ?? "")
             }
         }
         .task {
-            await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
+            await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
         }
     }
     
@@ -110,7 +117,7 @@ struct ExpensesListView: View {
                     }
                     .swipeActions(edge: .leading) {
                         Button {
-                            viewModel.toggleExtraordinary(expense)
+                            Task { await viewModel.toggleExtraordinary(expense) }
                         } label: {
                             Label(
                                 expense.extraordinary ? "Unmark Extra" : "Mark Extra",
@@ -121,8 +128,12 @@ struct ExpensesListView: View {
                     }
             }
             .onDelete { offsets in
-                viewModel.deleteExpenses(at: offsets, from: viewModel.filteredExpenses(), in: modelContext)
+                let rows = viewModel.filteredExpenses()
+                Task { await viewModel.deleteExpenses(at: offsets, from: rows) }
             }
+        }
+        .refreshable {
+            await viewModel.refreshExpenses()
         }
         .overlay {
             if viewModel.expenses.isEmpty {
@@ -137,14 +148,14 @@ struct ExpensesListView: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Expense.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    let context = container.mainContext
     let food = Category(id: 1, name: "Food", icon: "fork.knife")
     let transport = Category(id: 2, name: "Transport", icon: "car.fill")
-    context.insert(Expense(categoryID: food.id, details: "Lunch at restaurant", value: 25.50))
-    context.insert(Expense(categoryID: transport.id, value: 1200.00))
-    context.insert(Expense(categoryID: food.id, details: "Groceries", value: 87.30))
-    return ExpensesListView()
-        .modelContainer(container)
+    let expenses = [
+        Expense(id: 1, categoryID: food.id, details: "Lunch at restaurant", value: 25.50),
+        Expense(id: 2, categoryID: transport.id, value: 1200.00),
+        Expense(id: 3, categoryID: food.id, details: "Groceries", value: 87.30)
+    ]
+    ExpensesListView()
         .environment(CategoryBasket(categories: [food, transport]))
+        .environment(ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: expenses)))
 }

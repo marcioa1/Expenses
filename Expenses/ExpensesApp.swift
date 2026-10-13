@@ -6,29 +6,17 @@
 //
 
 import SwiftUI
-import SwiftData
 
 @main
 struct ExpensesApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Expense.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
+    
     let authService: AuthService = RemoteAuthService(baseURL: AppConfiguration.apiBaseURL)
 
     private let sessionStore = SessionStore()
 
     /// Single source of categories shared by every tab.
     @State private var categoryBasket = CategoryBasket(categoryRepository: CategoryRemoteDataProvider())
+    @State private var expenseBasket = ExpenseBasket(expenseRepository: ExpenseRemoteDataProvider())
 
     /// `nil` until the user signs in; drives whether the login screen or the main tabs are shown.
     /// Restored from the Keychain on launch so the user stays signed in.
@@ -61,9 +49,9 @@ struct ExpensesApp: App {
                 }
                 .tint(.orange)
                 .environment(categoryBasket)
+                .environment(expenseBasket)
             }
         }
-        .modelContainer(sharedModelContainer)
     }
 
     /// Clears the local session immediately, then tells the server to revoke the token.

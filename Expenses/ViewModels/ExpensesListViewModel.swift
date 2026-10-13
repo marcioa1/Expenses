@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftData
 import Observation
 
 @MainActor
@@ -19,22 +18,25 @@ class ExpensesListViewModel: MonthFilterable {
     var selectedExtra: ExtraOption = .all
     let monthFilter = MonthFilter()
     var loadingState: LoadingState = .loading
-    
+    /// Message of the last failed write (delete / update), shown as an alert by the view.
+    var errorMessage: String?
+
     /// Shared category store, provided by the view via `configure`.
     var categoryBasket: CategoryBasket?
     var categories: [Category] {
         categoryBasket?.categories ?? []
     }
-    var expenses: [Expense] = []
-    private var expenseRepository: ExpenseLocalDataProvider?
-    
+    /// Shared expense store, provided by the view via `configure`.
+    var expenseBasket: ExpenseBasket?
+    /// Expenses of the selected month, newest first.
+    var expenses: [Expense] {
+        expenseBasket?.expenses(from: monthFilter.monthStart(), to: monthFilter.monthEnd()) ?? []
+    }
+
+    /// Months are filtered in memory from the shared basket, so changing month needs no fetch.
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
-        set {
-            monthFilter.selectedMonthIndex = newValue
-            
-            Task { await self.refreshExpenses() }
-        }
+        set { monthFilter.selectedMonthIndex = newValue }
     }
     
     func filteredExpenses() -> [Expense] {
@@ -64,30 +66,44 @@ class ExpensesListViewModel: MonthFilterable {
         return result
     }
     
-    var totalAmount: Double {
+    var totalAmount: Decimal {
         filteredExpenses().reduce(0) { $0 + $1.value }
     }
     
-    func deleteExpenses(at offsets: IndexSet, from expenses: [Expense], in context: ModelContext) {
-        for index in offsets {
-            context.delete(expenses[index])
+    func deleteExpenses(at offsets: IndexSet, from expenses: [Expense]) async {
+        guard let expenseBasket else { return }
+        // Resolve the rows before awaiting: the list changes as each delete completes.
+        let toDelete = offsets.map { expenses[$0] }
+        do {
+            for expense in toDelete {
+                try await expenseBasket.delete(expense)
+            }
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 
-    func toggleExtraordinary(_ expense: Expense) {
-        expense.extraordinary.toggle()
+    func toggleExtraordinary(_ expense: Expense) async {
+        guard let expenseBasket else { return }
+        var updated = expense
+        updated.extraordinary.toggle()
+        do {
+            try await expenseBasket.update(updated)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
-    
+
     func category(for expense: Expense) -> Category? {
         categories.category(withID: expense.categoryID)
     }
 
-    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
+    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
-        expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
+        self.expenseBasket = expenseBasket
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.getAllCategories() }
-            group.addTask { await self.refreshExpenses() }
+            group.addTask { await self.loadExpenses() }
         }
         if loadingState != .failed {
             loadingState = .success
@@ -103,23 +119,26 @@ class ExpensesListViewModel: MonthFilterable {
         }
     }
     
+    /// Searches every loaded expense, not only the selected month.
     func latestCategory(forLocationName locationName: String) async -> Category? {
-        let categoryID = expenses
-            .filter({ $0.locationName == locationName })
-            .sorted(by: { $0.datetime > $1.datetime })
-            .first?.categoryID
-            ?? (try? expenseRepository?.latestCategoryID(forLocationName: locationName))
-        return categories.category(withID: categoryID)
+        categories.category(withID: expenseBasket?.latestCategoryID(forLocationName: locationName))
     }
 
-    func refreshExpenses() async {
-        loadingState = .loading
-        try? await Task.sleep(for: .seconds(1))
-        guard let expenseRepository else { return }
-        let start = monthFilter.monthStart()
-        let end = monthFilter.monthEnd()
+    /// Loads expenses once; the shared basket keeps them up to date after each write.
+    private func loadExpenses() async {
+        guard let expenseBasket else { return }
         do {
-            expenses = try await expenseRepository.fetch(from: start, to: end)
+            try await expenseBasket.loadIfNeeded()
+        } catch {
+            loadingState = .failed
+        }
+    }
+
+    /// Always re-fetches expenses from the server (e.g. pull-to-refresh).
+    func refreshExpenses() async {
+        guard let expenseBasket else { return }
+        do {
+            try await expenseBasket.getAllExpenses()
             loadingState = .success
         } catch {
             loadingState = .failed

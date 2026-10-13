@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftData
 import Observation
 
 @MainActor
@@ -18,12 +17,16 @@ class MonthlyGridViewModel {
     var categories: [Category] {
         categoryBasket?.categories ?? []
     }
-    var expenses: [Expense] = []
+    private var expenseBasket: ExpenseBasket?
+    /// Expenses within the months shown in the grid.
+    var expenses: [Expense] {
+        guard let expenseBasket, let range = displayedRange else { return [] }
+        return expenseBasket.expenses(from: range.start, to: range.end)
+    }
     var selectedCategory: Category?
     var selectedExtra: ExtraOption = .all
     var loadingState: LoadingState = .loading
-    private var expenseRepository: ExpenseLocalDataProvider?
-    
+
     var filteredExpenses: [Expense] {
         var result = expenses
         if let selectedCategory {
@@ -41,12 +44,12 @@ class MonthlyGridViewModel {
         return result
     }
     
-    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
+    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
-        expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
+        self.expenseBasket = expenseBasket
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.getAllCategories() }
-            group.addTask { await self.refreshExpenses() }
+            group.addTask { await self.loadExpenses() }
         }
         if loadingState != .failed {
             loadingState = .success
@@ -62,20 +65,25 @@ class MonthlyGridViewModel {
         }
     }
     
-    func refreshExpenses() async {
-        try? await Task.sleep(for: .seconds(1))
-        guard let expenseRepository, let firstMonth = months.first, let lastMonth = months.last else { return }
+    /// Loads expenses once; the shared basket keeps them up to date after each write.
+    private func loadExpenses() async {
+        guard let expenseBasket else { return }
+        do {
+            try await expenseBasket.loadIfNeeded()
+        } catch {
+            loadingState = .failed
+        }
+    }
+
+    /// From the first day of the oldest month to the last second of the newest month shown.
+    private var displayedRange: (start: Date, end: Date)? {
+        guard let firstMonth = months.first, let lastMonth = months.last else { return nil }
         var startComps = calendar.dateComponents([.year, .month], from: firstMonth)
         startComps.day = 1
         guard let start = calendar.date(from: startComps),
               let lastMonthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: lastMonth)),
-              let end = calendar.date(byAdding: DateComponents(month: 1, second: -1), to: lastMonthStart) else { return }
-        do {
-            expenses = try await expenseRepository.fetch(from: start, to: end)
-            loadingState = .success
-        } catch {
-            loadingState = .failed
-        }
+              let end = calendar.date(byAdding: DateComponents(month: 1, second: -1), to: lastMonthStart) else { return nil }
+        return (start, end)
     }
     
     var months: [Date] {
@@ -90,7 +98,7 @@ class MonthlyGridViewModel {
         calendar.range(of: .day, in: .month, for: date)?.count ?? 31
     }
 
-    func accumulated(through day: Int, in monthDate: Date, from expenses: [Expense]) -> Double? {
+    func accumulated(through day: Int, in monthDate: Date, from expenses: [Expense]) -> Decimal? {
         guard day <= daysInMonth(monthDate) else { return nil }
         var comps = calendar.dateComponents([.year, .month], from: monthDate)
         comps.day = 1
@@ -102,12 +110,12 @@ class MonthlyGridViewModel {
                 let d = $0.datetime
                 return d >= startDate && calendar.compare(d, to: endDate, toGranularity: .day) != .orderedDescending
             }
-            .reduce(0.0) { $0 + $1.value }
+            .reduce(Decimal.zero) { $0 + $1.value }
         return sum > 0 ? sum : nil
     }
 
-    func maxTotal(from expenses: [Expense]) -> Double {
-        var result = 0.0
+    func maxTotal(from expenses: [Expense]) -> Decimal {
+        var result = Decimal.zero
         for month in months {
             if let t = accumulated(through: daysInMonth(month), in: month, from: expenses) {
                 result = Swift.max(result, t)

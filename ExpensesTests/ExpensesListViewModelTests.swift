@@ -6,7 +6,6 @@
 //
 
 import Testing
-import SwiftData
 import Foundation
 @testable import Expenses
 
@@ -20,17 +19,12 @@ struct ExpensesListViewModelTests {
 
     private func makeViewModel(expenses: [Expense] = [], categories: [Category] = []) -> ExpensesListViewModel {
         let vm = ExpensesListViewModel()
-        vm.expenses = expenses
+        vm.expenseBasket = ExpenseBasket(expenses: expenses)
         vm.categoryBasket = CategoryBasket(categories: categories)
         return vm
     }
 
-    private func makeContainer() throws -> ModelContainer {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Expense.self, configurations: config)
-    }
-
-    // MARK: - In-memory path
+    // MARK: - latestCategory
 
     @Test func latestCategoryReturnsNilWhenNoExpenses() async {
         let vm = makeViewModel()
@@ -38,29 +32,29 @@ struct ExpensesListViewModelTests {
         #expect(result == nil)
     }
 
-    @Test func latestCategoryReturnsMatchFromMemory() async {
+    @Test func latestCategoryReturnsMatch() async {
         let food = Category(id: 1, name: "Food")
-        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
+        let expense = Expense(id: 1, categoryID: food.id, value: 10, locationName: "Starbucks")
         let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "Starbucks")
         #expect(result?.name == "Food")
     }
 
-    @Test func latestCategoryReturnsMostRecentWhenMultipleMatchInMemory() async {
+    @Test func latestCategoryReturnsMostRecentWhenMultipleMatch() async {
         let food = Category(id: 1, name: "Food")
         let transport = Category(id: 2, name: "Transport")
-        let older = Expense(categoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
-        let newer = Expense(categoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
+        let older = Expense(id: 1, categoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
+        let newer = Expense(id: 2, categoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
         let vm = makeViewModel(expenses: [older, newer], categories: [food, transport])
 
         let result = await vm.latestCategory(forLocationName: "Airport")
         #expect(result?.name == "Transport")
     }
 
-    @Test func latestCategoryReturnsNilWhenLocationNotFoundInMemory() async {
+    @Test func latestCategoryReturnsNilWhenLocationNotFound() async {
         let food = Category(id: 1, name: "Food")
-        let expense = Expense(categoryID: food.id, value: 10, locationName: "Starbucks")
+        let expense = Expense(id: 1, categoryID: food.id, value: 10, locationName: "Starbucks")
         let vm = makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "McDonald's")
@@ -75,9 +69,9 @@ struct ExpensesListViewModelTests {
         let transport = Category(id: 2, name: "Transport")
         let vm = makeViewModel(
             expenses: [
-                Expense(categoryID: food.id, value: 10),
-                Expense(categoryID: restaurants.id, value: 20),
-                Expense(categoryID: transport.id, value: 30)
+                Expense(id: 1, categoryID: food.id, value: 10),
+                Expense(id: 2, categoryID: restaurants.id, value: 20),
+                Expense(id: 3, categoryID: transport.id, value: 30)
             ],
             categories: [food, restaurants, transport]
         )
@@ -86,24 +80,50 @@ struct ExpensesListViewModelTests {
         #expect(vm.filteredExpenses().map(\.value).sorted() == [10, 20])
     }
 
-    // MARK: - DB fallback path
+    // MARK: - Month filter
 
-    @Test func latestCategoryFallsBackToDBWhenNotInCurrentMonth() async throws {
-        let container = try makeContainer()
-        let context = ModelContext(container)
-
+    @Test func latestCategorySearchesOutsideSelectedMonth() async {
         let food = Category(id: 1, name: "Food")
         let pastDate = Calendar.current.date(byAdding: .month, value: -2, to: .now)!
-        let oldExpense = Expense(categoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
-        context.insert(oldExpense)
-        try context.save()
+        let oldExpense = Expense(id: 1, categoryID: food.id, value: 15, datetime: pastDate, locationName: "OldPlace")
 
         let vm = ExpensesListViewModel()
-        await vm.configure(modelContext: context, categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food])))
-        // expenses only holds current month — OldPlace won't be present
+        await vm.configure(
+            categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food])),
+            expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [oldExpense]))
+        )
+        // `expenses` only holds the current month — OldPlace won't be present
         #expect(vm.expenses.filter { $0.locationName == "OldPlace" }.isEmpty)
 
         let result = await vm.latestCategory(forLocationName: "OldPlace")
         #expect(result?.name == "Food")
+    }
+
+    // MARK: - Writes
+
+    @Test func deleteRemovesExpenseFromBasket() async {
+        let food = Category(id: 1, name: "Food")
+        let lunch = Expense(id: 1, categoryID: food.id, value: 10)
+        let dinner = Expense(id: 2, categoryID: food.id, value: 20)
+        let basket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [lunch, dinner]))
+        let vm = ExpensesListViewModel()
+        await vm.configure(categoryBasket: CategoryBasket(categories: [food]), expenseBasket: basket)
+
+        await vm.deleteExpenses(at: IndexSet(integer: 0), from: [lunch, dinner])
+
+        #expect(basket.expenses.map(\.id) == [2])
+        #expect(vm.errorMessage == nil)
+    }
+
+    @Test func toggleExtraordinaryUpdatesExpenseInBasket() async {
+        let food = Category(id: 1, name: "Food")
+        let lunch = Expense(id: 1, categoryID: food.id, value: 10)
+        let basket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [lunch]))
+        let vm = ExpensesListViewModel()
+        await vm.configure(categoryBasket: CategoryBasket(categories: [food]), expenseBasket: basket)
+
+        await vm.toggleExtraordinary(lunch)
+
+        #expect(basket.expense(withID: 1)?.extraordinary == true)
     }
 }

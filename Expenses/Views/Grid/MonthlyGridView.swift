@@ -6,11 +6,10 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct MonthlyGridView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(CategoryBasket.self) private var categoryBasket
+    @Environment(ExpenseBasket.self) private var expenseBasket
     @State private var viewModel = MonthlyGridViewModel()
     @State private var showingFilter = false
     @State private var selectedSort: SortOption? = nil
@@ -70,7 +69,7 @@ struct MonthlyGridView: View {
             .presentationDragIndicator(.visible)
         }
         .task {
-            await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
+            await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
         }
     }
 
@@ -91,13 +90,14 @@ struct MonthlyGridView: View {
     }
 
     @ViewBuilder
-    private func cell(day: Int, month: Date, maxTotal: Double) -> some View {
+    private func cell(day: Int, month: Date, maxTotal: Decimal) -> some View {
         if day > viewModel.daysInMonth(month) {
             Color.clear
                 .frame(maxWidth: .infinity, minHeight: 36)
         } else {
             let amount = viewModel.accumulated(through: day, in: month, from: viewModel.filteredExpenses)
-            let intensity = amount.map { $0 / maxTotal } ?? 0
+            // A 0...1 ratio used only for the cell's opacity, so `Double` precision is fine here.
+            let intensity = amount.map { Double(truncating: ($0 / maxTotal) as NSDecimalNumber) } ?? 0
 
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
@@ -124,31 +124,22 @@ struct MonthlyGridView: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(
-        for: Expense.self,
-        configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-    )
-    let context = container.mainContext
     let food = Category(id: 1, name: "Food", icon: "fork.knife")
     let transport = Category(id: 2, name: "Transport", icon: "car.fill")
-
     let calendar = Calendar.current
-    let now = Date.now
+    var expenses: [Expense] = []
     for monthOffset in -2...0 {
-        guard let monthDate = calendar.date(byAdding: .month, value: monthOffset, to: now) else { continue }
-        let daysInMonth = calendar.range(of: .day, in: .month, for: monthDate)?.count ?? 28
-        for _ in 1...8 {
-            let day = Int.random(in: 1...daysInMonth)
-            var comps = calendar.dateComponents([.year, .month], from: monthDate)
+        for day in stride(from: 1, through: 28, by: 3) {
+            guard let month = calendar.date(byAdding: .month, value: monthOffset, to: .now) else { continue }
+            var comps = calendar.dateComponents([.year, .month], from: month)
             comps.day = day
-            if let date = calendar.date(from: comps) {
-                context.insert(Expense(categoryID: food.id, value: Double.random(in: 10...200), datetime: date))
-                context.insert(Expense(categoryID: transport.id, value: Double.random(in: 5...150), datetime: date))
-            }
+            guard let date = calendar.date(from: comps) else { continue }
+            // Random amounts in cents, so every value has exactly two decimal places.
+            expenses.append(Expense(id: expenses.count + 1, categoryID: food.id, value: Decimal(Int.random(in: 1_000...20_000)) / 100, datetime: date))
+            expenses.append(Expense(id: expenses.count + 1, categoryID: transport.id, value: Decimal(Int.random(in: 500...15_000)) / 100, datetime: date))
         }
     }
-
     return MonthlyGridView()
-        .modelContainer(container)
         .environment(CategoryBasket(categories: [food, transport]))
+        .environment(ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: expenses)))
 }

@@ -60,6 +60,7 @@ struct ExpenseRowView: View {
 #Preview("Regular") {
     let category = Category(id: 1, name: "Food", icon: "fork.knife")
     let expense = Expense(
+        id: 1,
         categoryID: category.id,
         details: "Lunch at the office",
         value: 42.50,
@@ -73,6 +74,7 @@ struct ExpenseRowView: View {
 #Preview("Extraordinary") {
     let category = Category(id: 2, name: "Travel", icon: "airplane")
     let expense = Expense(
+        id: 2,
         categoryID: category.id,
         value: 1250.00,
         extraordinary: true

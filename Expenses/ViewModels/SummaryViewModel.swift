@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftData
 
 @MainActor
 @Observable
@@ -33,9 +32,9 @@ class SummaryViewModel: MonthFilterable {
         loadingState = previewState
     }
 
-    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
+    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
-        expenseBasket = ExpenseBasket(expenseRepository: ExpenseLocalDataProvider(modelContext: modelContext))
+        self.expenseBasket = expenseBasket
         await withTaskGroup(of: Void.self) { group in
             group.addTask { await self.refreshCategories() }
             group.addTask { await self.refreshExpenses() }
@@ -54,10 +53,10 @@ class SummaryViewModel: MonthFilterable {
         }
     }
 
-    func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Double)], total: Double)] {
+    func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Decimal)], total: Decimal)] {
         guard let categoryBasket else { return [] }
         let filtered = monthFilter.filteredExpenses(from: self.expenses)
-        var parentMap: [Int: (parent: Category, children: [Int: Double])] = [:]
+        var parentMap: [Int: (parent: Category, children: [Int: Decimal])] = [:]
 
         for expense in filtered {
             // Expenses whose category is not (or no longer) on the server are left out of the breakdown.
@@ -71,7 +70,7 @@ class SummaryViewModel: MonthFilterable {
 
         return parentMap.values
             .map { entry in
-                let subtotals = entry.children.compactMap { (catId, total) -> (category: Category, total: Double)? in
+                let subtotals = entry.children.compactMap { (catId, total) -> (category: Category, total: Decimal)? in
                     guard let cat = categories.first(where: { $0.id == catId }) else { return nil }
                     return (category: cat, total: total)
                 }
@@ -87,7 +86,9 @@ class SummaryViewModel: MonthFilterable {
     private func refreshExpenses() async {
         guard let expenseBasket else { return }
         do {
-            try await expenseBasket.getAllExpenses()
+            // The basket is shared by every tab and months are filtered in memory,
+            // so only the first call actually hits the server.
+            try await expenseBasket.loadIfNeeded()
             loadingState = .success
         } catch {
             loadingState = .failed

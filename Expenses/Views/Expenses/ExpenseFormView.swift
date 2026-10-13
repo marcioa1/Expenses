@@ -6,14 +6,15 @@
 //
 
 import SwiftUI
-import SwiftData
 
 struct ExpenseFormView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Environment(CategoryBasket.self) private var categoryBasket
+    @Environment(ExpenseBasket.self) private var expenseBasket
 
     @State private var viewModel: ExpenseFormViewModel
+    @State private var isSaving = false
+    @State private var errorMessage: String?
     @FocusState private var isValueFocused: Bool
 
     init(expense: Expense? = nil) {
@@ -21,7 +22,6 @@ struct ExpenseFormView: View {
     }
 
     var body: some View {
-        @State var isSaving: Bool = false
         NavigationStack {
             Form {
                 Section("Category") {
@@ -63,13 +63,7 @@ struct ExpenseFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        isSaving = true
-                        Task {
-                            try? await Task.sleep(for: .seconds(2))
-                        }
-                        viewModel.save(in: modelContext)
-                        isSaving = false
-                        dismiss()
+                        Task { await save() }
                     } label: {
                         Text("Save")
                             .opacity(isSaving ? 0 : 1)
@@ -82,24 +76,42 @@ struct ExpenseFormView: View {
                     .disabled(!viewModel.canSave || isSaving)
                 }
             }
-            .task {
-                await viewModel.configure(modelContext: modelContext, categoryBasket: categoryBasket)
+            .alert(
+                "Couldn't save expense",
+                isPresented: Binding(
+                    get: { errorMessage != nil },
+                    set: { if !$0 { errorMessage = nil } }
+                )
+            ) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(errorMessage ?? "")
             }
+            .interactiveDismissDisabled(isSaving)
+            .task {
+                await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+            }
+        }
+    }
+
+    /// Waits for the server; the form only closes once the expense is saved.
+    private func save() async {
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            try await viewModel.save()
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
         }
     }
 }
 
 #Preview {
-    struct PreviewWrapper: View {
-        var body: some View {
-            let container = try! ModelContainer(for: Expense.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-            return ExpenseFormView()
-                .modelContainer(container)
-                .environment(CategoryBasket(categories: [
-                    Category(id: 1, name: "Food", icon: "fork.knife"),
-                    Category(id: 2, name: "Transport", icon: "car.fill")
-                ]))
-        }
-    }
-    return PreviewWrapper()
+    ExpenseFormView()
+        .environment(CategoryBasket(categories: [
+            Category(id: 1, name: "Food", icon: "fork.knife"),
+            Category(id: 2, name: "Transport", icon: "car.fill")
+        ]))
+        .environment(ExpenseBasket(expenseRepository: MockExpenseDataProvider()))
 }

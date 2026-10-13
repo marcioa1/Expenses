@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import SwiftData
 import Observation
 import MapKit
 
@@ -15,7 +14,7 @@ import MapKit
 class ExpenseFormViewModel {
     var selectedCategory: Category?
     var details: String = ""
-    var value: Double?
+    var value: Decimal?
     var datetime: Date = .now
     var locationName: String = ""
     var latitude: Double?
@@ -24,7 +23,7 @@ class ExpenseFormViewModel {
 
     let expense: Expense?
     private var categoryBasket: CategoryBasket?
-    private var expenseRepository: ExpenseLocalDataProvider?
+    private var expenseBasket: ExpenseBasket?
     private let locationManager = LocationManager()
 
     var categories: [Category] {
@@ -37,10 +36,12 @@ class ExpenseFormViewModel {
         selectedCategory != nil && value != nil && value! > 0
     }
 
-    func configure(modelContext: ModelContext, categoryBasket: CategoryBasket) async {
-        expenseRepository = ExpenseLocalDataProvider(modelContext: modelContext)
+    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
+        self.expenseBasket = expenseBasket
         await configure(with: categoryBasket)
         if !isEditing {
+            // Expenses are needed to suggest a category for the current location.
+            try? await expenseBasket.loadIfNeeded()
             await resolveLocation()
         }
     }
@@ -71,21 +72,23 @@ class ExpenseFormViewModel {
         }
     }
 
-    func save(in context: ModelContext) {
-        guard let selectedCategory, let value else { return }
+    /// Creates or updates the expense through the shared basket, which sends it to the server.
+    func save() async throws {
+        guard let expenseBasket, let selectedCategory, let value else { return }
         let trimmedDetails = details.trimmingCharacters(in: .whitespaces)
         let trimmedLocation = locationName.trimmingCharacters(in: .whitespaces)
-        if let expense {
-            expense.categoryID = selectedCategory.id
-            expense.details = trimmedDetails.isEmpty ? nil : trimmedDetails
-            expense.value = value
-            expense.datetime = datetime
-            expense.locationName = trimmedLocation.isEmpty ? nil : trimmedLocation
-            expense.latitude = latitude
-            expense.longitude = longitude
-            expense.extraordinary = extraordinary
+        if var updated = expense {
+            updated.categoryID = selectedCategory.id
+            updated.details = trimmedDetails.isEmpty ? nil : trimmedDetails
+            updated.value = value
+            updated.datetime = datetime
+            updated.locationName = trimmedLocation.isEmpty ? nil : trimmedLocation
+            updated.latitude = latitude
+            updated.longitude = longitude
+            updated.extraordinary = extraordinary
+            try await expenseBasket.update(updated)
         } else {
-            let newExpense = Expense(
+            let draft = ExpenseDraft(
                 categoryID: selectedCategory.id,
                 details: trimmedDetails.isEmpty ? nil : trimmedDetails,
                 value: value,
@@ -95,7 +98,7 @@ class ExpenseFormViewModel {
                 locationName: trimmedLocation.isEmpty ? nil : trimmedLocation,
                 extraordinary: extraordinary
             )
-            context.insert(newExpense)
+            try await expenseBasket.create(draft)
         }
     }
 
@@ -106,7 +109,7 @@ class ExpenseFormViewModel {
         let name = poi?.name ?? ""
         locationName = name
         if !name.isEmpty {
-            let categoryID = try? expenseRepository?.latestCategoryID(forLocationName: name)
+            let categoryID = expenseBasket?.latestCategoryID(forLocationName: name)
             selectedCategory = categories.category(withID: categoryID)
         }
     }
