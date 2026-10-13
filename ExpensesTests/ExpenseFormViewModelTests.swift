@@ -102,6 +102,18 @@ struct ExpenseFormViewModelTests {
         await vm.configure(with: makeBasket(categories: [food, transport]))
         #expect(vm.leafCategories().count == 2)
     }
+    
+    // MARK: - Active categories
+    @Test func activeCategoriesDoNotIncludeInactiveCategories() async {
+        let food = Category(id: 1, name: "Food", isActive: true)
+        let transport = Category(id: 2, name: "Transport", isActive: false)
+        let vm = ExpenseFormViewModel()
+        await vm.configure(with: makeBasket(categories: [food, transport]))
+        #expect(vm.activeCategories().count == 1)
+        #expect(vm.activeCategories().map{$0.id}.contains([1]))
+        #expect(!(vm.activeCategories().map{$0.id}.contains(2)))
+
+    }
 
     // MARK: - ExpenseBasket.latestCategoryID
     // These cover the lookup that ExpenseFormViewModel.resolveLocation() uses.

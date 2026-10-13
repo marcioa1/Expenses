@@ -57,6 +57,10 @@ class ExpenseFormViewModel {
     func leafCategories() -> [Category] {
         categories.filter { categories.subcategories(of: $0).isEmpty }
     }
+    
+    func activeCategories() -> [Category] {
+        categories.filter{ $0.isActive }
+    }
 
     init(expense: Expense? = nil) {
         self.expense = expense
