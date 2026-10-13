@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Expense: Codable {
+struct Expense: Identifiable, Codable {
     var id: Int
     var categoryID: Int = 0
     var details: String?
