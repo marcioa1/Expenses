@@ -50,6 +50,12 @@ struct ExpensesApp: App {
                 .tint(.orange)
                 .environment(categoryBasket)
                 .environment(expenseBasket)
+                .task {
+                    // `APIClient` posts this when an authenticated request gets a 401.
+                    for await _ in NotificationCenter.default.notifications(named: .sessionExpired) {
+                        endSession()
+                    }
+                }
             }
         }
     }
@@ -58,10 +64,18 @@ struct ExpensesApp: App {
     /// The server call is best-effort: the user is logged out locally even if it fails.
     private func logout() {
         guard let currentSession = session else { return }
-        sessionStore.clear()
-        session = nil
+        endSession()
         Task {
             try? await authService.signOut(currentSession)
         }
+    }
+
+    /// Forgets the session and every user's data held in memory, returning to the login screen.
+    /// Used directly when the server rejects the token, since signing out with it would fail too.
+    private func endSession() {
+        sessionStore.clear()
+        session = nil
+        expenseBasket.reset()
+        categoryBasket.reset()
     }
 }

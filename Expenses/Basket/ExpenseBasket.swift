@@ -50,6 +50,14 @@ final class ExpenseBasket {
         hasLoaded = true
     }
 
+    /// Drops all loaded expenses (e.g. on logout) so the next user starts with a fresh fetch.
+    func reset() {
+        loadTask?.cancel()
+        loadTask = nil
+        expenses = []
+        hasLoaded = false
+    }
+
     // MARK: - Writes
 
     func create(_ draft: ExpenseDraft) async throws {

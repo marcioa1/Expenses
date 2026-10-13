@@ -48,6 +48,14 @@ final class CategoryBasket {
         hasLoaded = true
     }
 
+    /// Drops all loaded categories (e.g. on logout) so the next user starts with a fresh fetch.
+    func reset() {
+        loadTask?.cancel()
+        loadTask = nil
+        categories = []
+        hasLoaded = false
+    }
+
     // MARK: - Writes
 
     func create(_ draft: CategoryDraft) async throws {
