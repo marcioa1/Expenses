@@ -9,7 +9,7 @@
 import Foundation
 
 @MainActor
-final class MockExpenseDataProvider: ExpenseRepository {
+final class MockExpenseDataProvider: @MainActor ExpenseRepository {
     typealias Item = Expense
 
     private var expenses: [Expense]

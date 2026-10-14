@@ -9,7 +9,7 @@
 import Foundation
 
 @MainActor
-final class MockCategoryDataProvider: CategoryRepository {
+final class MockCategoryDataProvider: @MainActor CategoryRepository {
     typealias Item = Category
 
     private var categories: [Category]
