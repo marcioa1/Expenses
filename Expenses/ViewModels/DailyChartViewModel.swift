@@ -56,10 +56,10 @@ class DailyChartViewModel: MonthFilterable {
         let filtered = monthFilter.filteredExpenses(from: allExpenses)
         let calendar = Calendar.current
 
-        var result = allExpenses
+        var result = filtered
         if let selectedCategory {
             let ids = categories.ids(matching: selectedCategory)
-            result = allExpenses.filter { ids.contains($0.categoryID) }
+            result = result.filter { ids.contains($0.categoryID) }
         }
         switch selectedExtra {
         case .all:

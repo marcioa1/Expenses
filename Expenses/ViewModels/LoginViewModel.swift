@@ -10,8 +10,8 @@ import Observation
 
 @Observable
 class LoginViewModel {
-    var email: String = "marcio@ar1mobile.com.br"
-    var password: String = "abcdefghijkl"
+    var email: String = ""
+    var password: String = ""
     var isLoading: Bool = false
     var errorMessage: String?
 
