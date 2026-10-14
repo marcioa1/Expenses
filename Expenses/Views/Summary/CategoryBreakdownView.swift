@@ -49,7 +49,7 @@ struct CategoryBreakdownView: View {
                                     .font(.headline)
 
                                 if totalAmount > 0 {
-                                    Text("\(Int(truncating: (group.total / totalAmount * 100) as NSDecimalNumber))%")
+                                    Text(group.total / totalAmount, format: .percent.precision(.fractionLength(0)))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }
