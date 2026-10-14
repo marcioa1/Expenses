@@ -25,66 +25,65 @@ struct DailyChartView: View {
     }
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Text("Daily Spending")
-                    .font(.title2.weight(.semibold))
+        NavigationStack {
+            VStack(spacing: 0) {
+                MonthCarouselView(
+                    monthOffsets: viewModel.monthOffsets,
+                    selectedMonthIndex: $viewModel.selectedMonthIndex
+                )
                 Spacer()
-                Button {
-                    showingFilter = true
-                } label: {
-                    Image(systemName: hasActiveFilters
-                          ? "line.3.horizontal.decrease.circle"
-                          : "line.3.horizontal.decrease.circle.fill")
-                    .font(.title3)
+                Section {
+                    Chart(viewModel.expensesByDay(from: viewModel.expenses)) { item in
+                        BarMark(
+                            x: .value("Day", item.day),
+                            y: .value("Total", item.plotTotal)
+                        )
+                        .foregroundStyle(.orange)
+                    }
+                    .chartXAxis {
+                        AxisMarks(values: .stride(by: 5)) { value in
+                            AxisValueLabel()
+                            AxisGridLine()
+                        }
+                    }
+                    .chartYAxis {
+                        AxisMarks { value in
+                            AxisValueLabel()
+                            AxisGridLine()
+                        }
+                    }
+                    .frame(height: 420)
+                    .padding(.vertical, 8)
                 }
-                Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
-                    onLogout()
-                }
-                .labelStyle(.iconOnly)
-                .font(.title3)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-            
-            MonthCarouselView(
-                monthOffsets: viewModel.monthOffsets,
-                selectedMonthIndex: $viewModel.selectedMonthIndex
-            )
-            Spacer()
-            Section {
-                Chart(viewModel.expensesByDay(from: viewModel.expenses)) { item in
-                    BarMark(
-                        x: .value("Day", item.day),
-                        y: .value("Total", item.plotTotal)
-                    )
-                    .foregroundStyle(.orange)
-                }
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: 5)) { value in
-                        AxisValueLabel()
-                        AxisGridLine()
+            .navigationTitle("Daily Spending")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingFilter = true
+                    } label: {
+                        Image(systemName: hasActiveFilters
+                              ? "line.3.horizontal.decrease.circle.fill"
+                              : "line.3.horizontal.decrease.circle")
                     }
                 }
-                .chartYAxis {
-                    AxisMarks { value in
-                        AxisValueLabel()
-                        AxisGridLine()
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        onLogout()
                     }
                 }
-                .frame(height: 420)
-                .padding(.vertical, 8)
             }
-        }
-        .sheet(isPresented: $showingFilter) {
-            FilterView(
-                selectedSort: $selectedSort,
-                selectedExtra: $viewModel.selectedExtra,
-                selectedCategory: $viewModel.selectedCategory,
-                categories: viewModel.categories
-            )
-            .presentationDetents([.height(280)])
-            .presentationDragIndicator(.visible)
+            .sheet(isPresented: $showingFilter) {
+                FilterView(
+                    selectedSort: $selectedSort,
+                    selectedExtra: $viewModel.selectedExtra,
+                    selectedCategory: $viewModel.selectedCategory,
+                    categories: viewModel.categories
+                )
+                .presentationDetents([.height(280)])
+                .presentationDragIndicator(.visible)
+            }
         }
         .task {
             await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)

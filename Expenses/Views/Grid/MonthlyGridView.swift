@@ -24,28 +24,7 @@ struct MonthlyGridView: View {
     
     var body: some View {
         let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
-        VStack(spacing: 0) {
-            HStack {
-                Text("Monthly Overview")
-                    .font(.title2.weight(.semibold))
-                Spacer()
-                Button {
-                    showingFilter = true
-                } label: {
-                    Image(systemName: hasActiveFilters
-                          ? "line.3.horizontal.decrease.circle"
-                          : "line.3.horizontal.decrease.circle.fill")
-                        .font(.title3)
-                }
-                Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
-                    onLogout()
-                }
-                .labelStyle(.iconOnly)
-                .font(.title3)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 12)
-
+        NavigationStack {
             ScrollView {
                 Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
                     headerRow
@@ -65,16 +44,34 @@ struct MonthlyGridView: View {
                 }
                 .padding()
             }
-        }
-        .sheet(isPresented: $showingFilter) {
-            FilterView(
-                selectedSort: $selectedSort,
-                selectedExtra: $viewModel.selectedExtra,
-                selectedCategory: $viewModel.selectedCategory,
-                categories: viewModel.categories
-            )
-            .presentationDetents([.height(280)])
-            .presentationDragIndicator(.visible)
+            .navigationTitle("Monthly Overview")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingFilter = true
+                    } label: {
+                        Image(systemName: hasActiveFilters
+                              ? "line.3.horizontal.decrease.circle.fill"
+                              : "line.3.horizontal.decrease.circle")
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                        onLogout()
+                    }
+                }
+            }
+            .sheet(isPresented: $showingFilter) {
+                FilterView(
+                    selectedSort: $selectedSort,
+                    selectedExtra: $viewModel.selectedExtra,
+                    selectedCategory: $viewModel.selectedCategory,
+                    categories: viewModel.categories
+                )
+                .presentationDetents([.height(280)])
+                .presentationDragIndicator(.visible)
+            }
         }
         .task {
             await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
