@@ -35,22 +35,18 @@ class SummaryViewModel: MonthFilterable {
     func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.refreshCategories() }
-            group.addTask { await self.refreshExpenses() }
-        }
-        if loadingState != .failed {
-            loadingState = .success
-        }
+        // Both loads run in parallel; the screen only succeeds if both do,
+        // so one load finishing later can't overwrite the other's failure.
+        async let categoriesLoaded = loadCategories()
+        async let expensesLoaded = loadExpenses()
+        let succeeded = await (categoriesLoaded, expensesLoaded) == (true, true)
+        loadingState = succeeded ? .success : .failed
     }
 
+    /// Months are filtered in memory from the shared basket, so changing month needs no fetch.
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
-        set {
-            monthFilter.selectedMonthIndex = newValue
-            loadingState = .loading
-            Task { await self.refreshExpenses() }
-        }
+        set { monthFilter.selectedMonthIndex = newValue }
     }
 
     func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Decimal)], total: Decimal)] {
@@ -83,26 +79,28 @@ class SummaryViewModel: MonthFilterable {
             .sorted { $0.total > $1.total }
     }
 
-    private func refreshExpenses() async {
-        guard let expenseBasket else { return }
+    /// - Returns: `true` if expenses are available.
+    private func loadExpenses() async -> Bool {
+        guard let expenseBasket else { return false }
         do {
             // The basket is shared by every tab and months are filtered in memory,
             // so only the first call actually hits the server.
             try await expenseBasket.loadIfNeeded()
-            loadingState = .success
+            return true
         } catch {
-            loadingState = .failed
+            return false
         }
     }
-    
-    private func refreshCategories() async {
-        guard let categoryBasket else { return }
+
+    /// - Returns: `true` if categories are available.
+    private func loadCategories() async -> Bool {
+        guard let categoryBasket else { return false }
         do {
             try await categoryBasket.loadIfNeeded()
-            loadingState = .success
+            return true
         } catch {
-            loadingState = .failed
+            return false
         }
     }
-    
+
 }
