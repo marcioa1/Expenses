@@ -17,11 +17,13 @@ struct LoginView: View {
 
     private let onLoginSuccess: (AuthSession) -> Void
 
+    /// - Parameter onLoginSuccess: Called once the session is signed in **and** saved in `sessionStore`.
     init(
         authService: any AuthService,
+        sessionStore: any SessionStoring = SessionStore(),
         onLoginSuccess: @escaping (AuthSession) -> Void = { _ in }
     ) {
-        _viewModel = State(initialValue: LoginViewModel(authService: authService))
+        _viewModel = State(initialValue: LoginViewModel(authService: authService, sessionStore: sessionStore))
         self.onLoginSuccess = onLoginSuccess
     }
 
@@ -97,9 +99,19 @@ struct LoginView: View {
 }
 
 #Preview("Success") {
-    LoginView(authService: MockAuthService(delay: .seconds(1)))
+    LoginView(authService: MockAuthService(delay: .seconds(1)), sessionStore: MockSessionStore())
 }
 
 #Preview("Invalid Credentials") {
-    LoginView(authService: MockAuthService(error: .invalidCredentials, delay: .seconds(1)))
+    LoginView(
+        authService: MockAuthService(error: .invalidCredentials, delay: .seconds(1)),
+        sessionStore: MockSessionStore()
+    )
+}
+
+#Preview("Session Not Saved") {
+    LoginView(
+        authService: MockAuthService(delay: .seconds(1)),
+        sessionStore: MockSessionStore(saveError: SessionStoreError.unexpectedStatus(errSecInteractionNotAllowed))
+    )
 }

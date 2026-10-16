@@ -25,8 +25,8 @@ struct ExpensesApp: App {
     var body: some Scene {
         WindowGroup {
             if session == nil {
-                LoginView(authService: authService) { newSession in
-                    try? sessionStore.save(newSession)
+                // The login screen saves the session itself and only calls back once it's stored.
+                LoginView(authService: authService, sessionStore: sessionStore) { newSession in
                     session = newSession
                 }
             } else {

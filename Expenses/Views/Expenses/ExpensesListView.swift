@@ -142,6 +142,13 @@ struct ExpensesListView: View {
                     systemImage: "creditcard",
                     description: Text("Add your first expense to get started.")
                 )
+            } else if viewModel.filteredExpenses().isEmpty {
+                // The month has expenses, but none match the category / extra filters.
+                ContentUnavailableView(
+                    "No Matching Expenses",
+                    systemImage: "line.3.horizontal.decrease.circle",
+                    description: Text("Try changing the filters.")
+                )
             }
         }
     }

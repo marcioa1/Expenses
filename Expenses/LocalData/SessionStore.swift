@@ -8,13 +8,20 @@
 import Foundation
 import Security
 
-enum SessionStoreError: Error, Equatable {
+enum SessionStoreError: LocalizedError, Equatable {
     case unexpectedStatus(OSStatus)
+
+    var errorDescription: String? {
+        switch self {
+        case .unexpectedStatus:
+            String(localized: "Couldn't save your session on this device. Please try again.")
+        }
+    }
 }
 
 /// Persists the signed-in `AuthSession` in the Keychain so the user stays
 /// logged in across launches.
-struct SessionStore {
+struct SessionStore: SessionStoring {
     /// `service` + `account` together form the unique key of the Keychain item.
     private let service: String
     private let account: String

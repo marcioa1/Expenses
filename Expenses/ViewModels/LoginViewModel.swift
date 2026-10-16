@@ -16,9 +16,11 @@ class LoginViewModel {
     var errorMessage: String?
 
     private let authService: any AuthService
+    private let sessionStore: any SessionStoring
 
-    init(authService: any AuthService) {
+    init(authService: any AuthService, sessionStore: any SessionStoring = SessionStore()) {
         self.authService = authService
+        self.sessionStore = sessionStore
     }
 
     private var trimmedEmail: String {
@@ -40,7 +42,9 @@ class LoginViewModel {
         isEmailValid && !password.isEmpty && !isLoading
     }
 
-    /// Returns the session when authentication succeeds, `nil` otherwise.
+    /// Signs in and persists the session.
+    /// - Returns: The session when authentication **and** saving succeed, `nil` otherwise
+    ///   (`errorMessage` explains why).
     @MainActor
     func login() async -> AuthSession? {
         guard canSubmit else { return nil }
@@ -48,10 +52,23 @@ class LoginViewModel {
         errorMessage = nil
         defer { isLoading = false }
 
+        let session: AuthSession
         do {
-            return try await authService.signIn(email: trimmedEmail, password: password)
+            session = try await authService.signIn(email: trimmedEmail, password: password)
         } catch {
             errorMessage = error.localizedDescription
+            return nil
+        }
+
+        do {
+            // Every API request reads the token from the store, so without a saved session the
+            // app would get in but all requests would fail. Stay on the login screen instead.
+            try sessionStore.save(session)
+            return session
+        } catch {
+            errorMessage = error.localizedDescription
+            // Best-effort: revoke the token we couldn't keep.
+            try? await authService.signOut(session)
             return nil
         }
     }

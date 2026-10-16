@@ -8,9 +8,12 @@
 import Foundation
 
 struct DailyTotal: Identifiable {
-    let id = UUID()
     let day: Int
     let total: Decimal
+
+    /// The day is unique within a month, so it stays the same across renders and the chart
+    /// can match each bar to its previous value instead of treating every bar as new.
+    var id: Int { day }
 
     /// Bar height for Swift Charts; only used for drawing, sums stay in `Decimal`.
     var plotTotal: Double {
