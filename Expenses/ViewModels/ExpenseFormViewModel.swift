@@ -24,7 +24,8 @@ class ExpenseFormViewModel {
     let expense: Expense?
     private var categoryBasket: CategoryBasket?
     private var expenseBasket: ExpenseBasket?
-    private let locationManager = LocationManager()
+    /// Finds the place where the user is; replaceable so tests don't need real GPS.
+    private let findPointOfInterest: () async -> PointOfInterest?
 
     var categories: [Category] {
         (categoryBasket?.categories ?? []).sorted { $0.name < $1.name }
@@ -71,8 +72,15 @@ class ExpenseFormViewModel {
         }
     }
 
-    init(expense: Expense? = nil) {
+    /// - Parameter findPointOfInterest: Looks up the current place for new expenses.
+    ///   Defaults to a `LocationManager`, created only when a location is actually needed.
+    init(expense: Expense? = nil, findPointOfInterest: (() async -> PointOfInterest?)? = nil) {
         self.expense = expense
+        self.findPointOfInterest = findPointOfInterest ?? {
+            // Kept alive by this closure until the lookup finishes.
+            let locationManager = LocationManager()
+            return await locationManager.getPOI()
+        }
         // `selectedCategory` is resolved from `expense.categoryID` once categories are fetched.
         if let expense {
             self.details = expense.details ?? ""
@@ -115,17 +123,26 @@ class ExpenseFormViewModel {
         }
     }
 
+    /// Pre-fills the location (and a suggested category) from where the user is.
+    ///
+    /// The GPS fix can take a few seconds, and the user may fill the form in the meantime.
+    /// What to change is decided only after the lookup returns, and only empty fields are
+    /// filled, so nothing the user typed or picked is overwritten.
     private func resolveLocation() async {
-        let poi = await locationManager.getPOI()
-        latitude = poi?.coordinate.latitude
-        longitude = poi?.coordinate.longitude
-        let name = poi?.name ?? ""
-        locationName = name
-        if !name.isEmpty {
-            let categoryID = expenseBasket?.latestCategoryID(forLocationName: name)
-            if let suggested = categories.category(withID: categoryID), suggested.isActive {
-                selectedCategory = suggested
-            }
+        guard let poi = await findPointOfInterest(), !poi.name.isEmpty else { return }
+
+        // The user typed their own location: keep it, and don't attach the GPS coordinates,
+        // since the place found may not be the one they wrote.
+        guard locationName.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        locationName = poi.name
+        latitude = poi.coordinate.latitude
+        longitude = poi.coordinate.longitude
+
+        // Suggest the category last used at this place, unless the user already picked one.
+        guard selectedCategory == nil else { return }
+        let categoryID = expenseBasket?.latestCategoryID(forLocationName: poi.name)
+        if let suggested = categories.category(withID: categoryID), suggested.isActive {
+            selectedCategory = suggested
         }
     }
 
