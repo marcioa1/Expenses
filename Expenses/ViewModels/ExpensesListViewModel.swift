@@ -101,47 +101,59 @@ class ExpensesListViewModel: MonthFilterable {
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { await self.getAllCategories() }
-            group.addTask { await self.loadExpenses() }
-        }
-        if loadingState != .failed {
-            loadingState = .success
-        }
+        // Both loads run in parallel; the screen only succeeds if both do. The state is set
+        // from this call's results alone, so a later successful retry clears an earlier failure.
+        async let categoriesLoaded = loadCategories()
+        async let expensesLoaded = loadExpenses()
+        let succeeded = await (categoriesLoaded, expensesLoaded) == (true, true)
+        loadingState = succeeded ? .success : .failed
     }
-    
-    private func getAllCategories() async {
-        guard let categoryBasket else { return }
+
+    /// - Returns: `true` if categories are available.
+    private func loadCategories() async -> Bool {
+        guard let categoryBasket else { return false }
         do {
             try await categoryBasket.loadIfNeeded()
+            return true
         } catch {
-            loadingState = .failed
+            return false
         }
     }
-    
+
     /// Searches every loaded expense, not only the selected month.
     func latestCategory(forLocationName locationName: String) async -> Category? {
         categories.category(withID: expenseBasket?.latestCategoryID(forLocationName: locationName))
     }
 
     /// Loads expenses once; the shared basket keeps them up to date after each write.
-    private func loadExpenses() async {
-        guard let expenseBasket else { return }
+    /// - Returns: `true` if expenses are available.
+    private func loadExpenses() async -> Bool {
+        guard let expenseBasket else { return false }
         do {
             try await expenseBasket.loadIfNeeded()
+            return true
         } catch {
-            loadingState = .failed
+            return false
         }
     }
 
     /// Always re-fetches expenses from the server (e.g. pull-to-refresh).
+    /// Categories are retried too if they failed before, so the screen can recover from either failure.
     func refreshExpenses() async {
-        guard let expenseBasket else { return }
+        async let categoriesLoaded = loadCategories()
+        async let expensesLoaded = reloadExpenses()
+        let succeeded = await (categoriesLoaded, expensesLoaded) == (true, true)
+        loadingState = succeeded ? .success : .failed
+    }
+
+    /// - Returns: `true` if the fresh fetch succeeded.
+    private func reloadExpenses() async -> Bool {
+        guard let expenseBasket else { return false }
         do {
             try await expenseBasket.getAllExpenses()
-            loadingState = .success
+            return true
         } catch {
-            loadingState = .failed
+            return false
         }
     }
 
