@@ -53,13 +53,19 @@ struct CategoryFormView: View {
                     .frame(height: 200)
                 }
 
-                Section("Parent Category") {
+                Section {
                     Picker("Parent", selection: $viewModel.parent) {
                         Text("None").tag(nil as Category?)
                         ForEach(viewModel.availableParents) { category in
                             Label(category.name, systemImage: category.icon)
                                 .tag(category as Category?)
                         }
+                    }
+                } header: {
+                    Text("Parent Category")
+                } footer: {
+                    if !viewModel.canHaveParent {
+                        Text("A category with subcategories can't be moved under another category.")
                     }
                 }
 
