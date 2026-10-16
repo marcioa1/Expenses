@@ -114,7 +114,7 @@ struct CategoryFormView: View {
                 Text(viewModel.errorMessage ?? "")
             }
             .task {
-                await viewModel.configure(categoryBasket: categoryBasket)
+                await viewModel.configure(with: categoryBasket)
             }
         }
     }

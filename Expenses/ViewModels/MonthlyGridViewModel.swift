@@ -44,7 +44,7 @@ class MonthlyGridViewModel {
         return result
     }
     
-    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
+    func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
         await withTaskGroup(of: Void.self) { group in

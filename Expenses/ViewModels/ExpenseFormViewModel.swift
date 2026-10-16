@@ -36,7 +36,7 @@ class ExpenseFormViewModel {
         selectedCategory != nil && value != nil && value! > 0
     }
 
-    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
+    func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.expenseBasket = expenseBasket
         await configure(with: categoryBasket)
         if !isEditing {

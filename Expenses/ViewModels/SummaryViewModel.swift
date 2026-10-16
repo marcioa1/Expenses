@@ -32,7 +32,7 @@ class SummaryViewModel: MonthFilterable {
         loadingState = previewState
     }
 
-    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
+    func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
         // Both loads run in parallel; the screen only succeeds if both do,

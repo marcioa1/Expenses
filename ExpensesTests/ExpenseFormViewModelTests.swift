@@ -188,7 +188,7 @@ struct ExpenseFormViewModelTests {
         try await expenseBasket.loadIfNeeded()
 
         let vm = ExpenseFormViewModel(expense: expense)
-        await vm.configure(categoryBasket: makeBasket(categories: [food, transport]), expenseBasket: expenseBasket)
+        await vm.configure(with: makeBasket(categories: [food, transport]), expenseBasket: expenseBasket)
         vm.selectedCategory = transport
         vm.value = 40
         vm.details = "  Taxi  "

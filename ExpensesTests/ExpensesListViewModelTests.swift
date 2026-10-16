@@ -89,7 +89,7 @@ struct ExpensesListViewModelTests {
 
         let vm = ExpensesListViewModel()
         await vm.configure(
-            categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food])),
+            with: CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: [food])),
             expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [oldExpense]))
         )
         // `expenses` only holds the current month — OldPlace won't be present
@@ -107,7 +107,7 @@ struct ExpensesListViewModelTests {
         let dinner = Expense(id: 2, categoryID: food.id, value: 20)
         let basket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [lunch, dinner]))
         let vm = ExpensesListViewModel()
-        await vm.configure(categoryBasket: CategoryBasket(categories: [food]), expenseBasket: basket)
+        await vm.configure(with: CategoryBasket(categories: [food]), expenseBasket: basket)
 
         await vm.deleteExpenses(at: IndexSet(integer: 0), from: [lunch, dinner])
 
@@ -120,7 +120,7 @@ struct ExpensesListViewModelTests {
         let lunch = Expense(id: 1, categoryID: food.id, value: 10)
         let basket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [lunch]))
         let vm = ExpensesListViewModel()
-        await vm.configure(categoryBasket: CategoryBasket(categories: [food]), expenseBasket: basket)
+        await vm.configure(with: CategoryBasket(categories: [food]), expenseBasket: basket)
 
         await vm.toggleExtraordinary(lunch)
 

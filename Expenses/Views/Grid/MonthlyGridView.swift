@@ -74,7 +74,7 @@ struct MonthlyGridView: View {
             }
         }
         .task {
-            await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+            await viewModel.configure(with: categoryBasket, expenseBasket: expenseBasket)
         }
     }
 

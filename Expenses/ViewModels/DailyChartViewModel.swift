@@ -33,7 +33,7 @@ class DailyChartViewModel: MonthFilterable {
         expenseBasket?.expenses ?? []
     }
 
-    func configure(categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
+    func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
         async let categories: Void? = try? categoryBasket.loadIfNeeded()

@@ -60,7 +60,7 @@ struct SummaryView: View {
                 ExpenseFormView(expense: expense)
             }
             .task {
-                await viewModel.configure(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+                await viewModel.configure(with: categoryBasket, expenseBasket: expenseBasket)
             }
         }
     }

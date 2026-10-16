@@ -39,7 +39,7 @@ struct SummaryViewModelTests {
     @Test func configureSucceedsWhenBothLoadsSucceed() async {
         let vm = SummaryViewModel()
         await vm.configure(
-            categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider()),
+            with: CategoryBasket(categoryRepository: MockCategoryDataProvider()),
             expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider())
         )
         #expect(vm.loadingState == .success)
@@ -48,7 +48,7 @@ struct SummaryViewModelTests {
     @Test func configureFailsWhenOnlyCategoriesFail() async {
         let vm = SummaryViewModel()
         await vm.configure(
-            categoryBasket: CategoryBasket(categoryRepository: FailingCategoryRepository()),
+            with: CategoryBasket(categoryRepository: FailingCategoryRepository()),
             expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider())
         )
         #expect(vm.loadingState == .failed)
@@ -57,7 +57,7 @@ struct SummaryViewModelTests {
     @Test func configureFailsWhenOnlyExpensesFail() async {
         let vm = SummaryViewModel()
         await vm.configure(
-            categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider()),
+            with: CategoryBasket(categoryRepository: MockCategoryDataProvider()),
             expenseBasket: ExpenseBasket(expenseRepository: FailingExpenseRepository())
         )
         #expect(vm.loadingState == .failed)
@@ -66,7 +66,7 @@ struct SummaryViewModelTests {
     @Test func changingMonthKeepsLoadedState() async {
         let vm = SummaryViewModel()
         await vm.configure(
-            categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider()),
+            with: CategoryBasket(categoryRepository: MockCategoryDataProvider()),
             expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider())
         )
         vm.selectedMonthIndex = 0

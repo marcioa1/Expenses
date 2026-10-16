@@ -11,7 +11,7 @@ import Observation
 @MainActor
 @Observable
 class CategoryFormViewModel {
-    var name: String = "Carro"
+    var name: String = ""
     var icon: String = "folder"
     var isActive: Bool = true
     var parent: Category?
@@ -89,7 +89,7 @@ class CategoryFormViewModel {
         }
     }
 
-    func configure(categoryBasket: CategoryBasket) async {
+    func configure(with categoryBasket: CategoryBasket) async {
         self.categoryBasket = categoryBasket
         try? await categoryBasket.loadIfNeeded()
         if let category {
