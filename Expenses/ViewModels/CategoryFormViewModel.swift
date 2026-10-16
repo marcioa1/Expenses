@@ -19,11 +19,12 @@ class CategoryFormViewModel {
     var errorMessage: String?
 
     let category: Category?
-    private let categoryBasket: CategoryBasket
+    /// Shared category store, provided by the view via `configure`.
+    private var categoryBasket: CategoryBasket?
 
     /// All categories currently loaded; used for parent selection, subcategories and name validation.
     var categories: [Category] {
-        categoryBasket.categories
+        categoryBasket?.categories ?? []
     }
 
     var isEditing: Bool { category != nil }
@@ -78,14 +79,21 @@ class CategoryFormViewModel {
         "wrench.and.screwdriver.fill", "scissors", "paintbrush.fill", "camera.fill"
     ]
 
-    init(category: Category? = nil, categoryBasket: CategoryBasket) {
+    init(category: Category? = nil) {
         self.category = category
-        self.categoryBasket = categoryBasket
+        // `parent` is resolved from `category.parentID` once categories are fetched.
         if let category {
             self.name = category.name
             self.icon = category.icon
             self.isActive = category.isActive
-            self.parent = categoryBasket.category(withID: category.parentID)
+        }
+    }
+
+    func configure(categoryBasket: CategoryBasket) async {
+        self.categoryBasket = categoryBasket
+        try? await categoryBasket.loadIfNeeded()
+        if let category {
+            parent = categoryBasket.category(withID: category.parentID)
         }
     }
 
@@ -102,6 +110,7 @@ class CategoryFormViewModel {
     /// Creates or updates the category on the server; the shared basket is updated on success.
     /// - Returns: `true` on success; on failure `errorMessage` is set.
     func save() async -> Bool {
+        guard let categoryBasket else { return false }
         isSaving = true
         defer { isSaving = false }
 

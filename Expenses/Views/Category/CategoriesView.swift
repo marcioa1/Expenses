@@ -52,10 +52,10 @@ struct CategoriesView: View {
                 }
             }
             .sheet(isPresented: $viewModel.showingForm) {
-                CategoryFormView(categoryBasket: categoryBasket)
+                CategoryFormView()
             }
             .sheet(item: $viewModel.categoryToEdit) { category in
-                CategoryFormView(category: category, categoryBasket: categoryBasket)
+                CategoryFormView(category: category)
             }
         }
     }

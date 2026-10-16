@@ -9,11 +9,12 @@ import SwiftUI
 
 struct CategoryFormView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(CategoryBasket.self) private var categoryBasket
 
     @State private var viewModel: CategoryFormViewModel
 
-    init(category: Category? = nil, categoryBasket: CategoryBasket) {
-        _viewModel = State(initialValue: CategoryFormViewModel(category: category, categoryBasket: categoryBasket))
+    init(category: Category? = nil) {
+        _viewModel = State(initialValue: CategoryFormViewModel(category: category))
     }
 
     var body: some View {
@@ -112,22 +113,24 @@ struct CategoryFormView: View {
             } message: {
                 Text(viewModel.errorMessage ?? "")
             }
+            .task {
+                await viewModel.configure(categoryBasket: categoryBasket)
+            }
         }
     }
 }
 
 #if DEBUG
 #Preview("New") {
-    CategoryFormView(categoryBasket: CategoryBasket(categoryRepository: MockCategoryDataProvider()))
+    CategoryFormView()
+        .environment(CategoryBasket(categoryRepository: MockCategoryDataProvider()))
 }
 
 #Preview("Edit") {
     let food = Category(id: 1, name: "Food", icon: "fork.knife")
     let restaurants = Category(id: 2, name: "Restaurants", icon: "cup.and.saucer.fill", parentID: food.id)
     let mock = MockCategoryDataProvider(categories: [food, restaurants])
-    CategoryFormView(
-        category: food,
-        categoryBasket: CategoryBasket(categoryRepository: mock, categories: [food, restaurants])
-    )
+    CategoryFormView(category: food)
+        .environment(CategoryBasket(categoryRepository: mock, categories: [food, restaurants]))
 }
 #endif
