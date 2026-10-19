@@ -9,7 +9,7 @@ import Foundation
 import Observation
 
 @Observable
-class LoginViewModel {
+final class LoginViewModel {
     var email: String = ""
     var password: String = ""
     var isLoading: Bool = false
@@ -46,7 +46,6 @@ class LoginViewModel {
     /// Signs in and persists the session.
     /// - Returns: The session when authentication **and** saving succeed, `nil` otherwise
     ///   (`errorMessage` explains why).
-    @MainActor
     func login() async -> AuthSession? {
         guard canSubmit else { return nil }
         isLoading = true

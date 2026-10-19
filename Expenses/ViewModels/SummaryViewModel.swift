@@ -7,9 +7,8 @@
 
 import Foundation
 
-@MainActor
 @Observable
-class SummaryViewModel: MonthFilterable {
+final class SummaryViewModel: MonthFilterable {
     private var categoryBasket: CategoryBasket?
     private var expenseBasket: ExpenseBasket?
 

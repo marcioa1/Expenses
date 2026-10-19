@@ -9,7 +9,6 @@ import Testing
 import Foundation
 @testable import Expenses
 
-@MainActor
 struct SummaryViewModelTests {
 
     @Test func configureSucceedsWhenBothLoadsSucceed() async {

@@ -12,7 +12,7 @@ extension JSONDecoder.DateDecodingStrategy {
     ///
     /// The backend sends some timestamps without an offset (e.g. `"2026-10-10T20:26:33"`, an Ecto
     /// `naive_datetime`), which the built-in `.iso8601` strategy rejects; those are read as UTC.
-    static var flexibleISO8601: Self {
+    nonisolated static var flexibleISO8601: Self {
         .custom { decoder in
             let container = try decoder.singleValueContainer()
             let string = try container.decode(String.self)
@@ -36,7 +36,7 @@ extension Date {
 
 extension Notification.Name {
     /// Posted by `APIClient` when an authenticated request gets `401 Unauthorized`.
-    static let sessionExpired = Notification.Name("APIClient.sessionExpired")
+    nonisolated static let sessionExpired = Notification.Name("APIClient.sessionExpired")
 }
 
 enum APIError: LocalizedError, Equatable {
@@ -115,19 +115,19 @@ struct APIClient {
 
     // MARK: - Convenience
 
-    func get<Response: Decodable>(_ path: String, query: [URLQueryItem] = []) async throws -> Response {
+    func get<Response: Decodable & Sendable & SendableMetatype>(_ path: String, query: [URLQueryItem] = []) async throws -> Response {
         try await request(.get, path, query: query)
     }
 
-    func post<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response {
+    func post<Body: Encodable, Response: Decodable & Sendable & SendableMetatype>(_ path: String, body: Body) async throws -> Response {
         try await request(.post, path, body: body)
     }
 
-    func put<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response {
+    func put<Body: Encodable, Response: Decodable & Sendable & SendableMetatype>(_ path: String, body: Body) async throws -> Response {
         try await request(.put, path, body: body)
     }
 
-    func patch<Body: Encodable, Response: Decodable>(_ path: String, body: Body) async throws -> Response {
+    func patch<Body: Encodable, Response: Decodable & Sendable & SendableMetatype>(_ path: String, body: Body) async throws -> Response {
         try await request(.patch, path, body: body)
     }
 
@@ -147,24 +147,24 @@ struct APIClient {
     // MARK: - Core
 
     /// Sends a request without a body and decodes the JSON response.
-    func request<Response: Decodable>(
+    func request<Response: Decodable & Sendable & SendableMetatype>(
         _ method: Method,
         _ path: String,
         query: [URLQueryItem] = []
     ) async throws -> Response {
         let data = try await send(makeRequest(method, path, query: query, body: Optional<Data>.none))
-        return try decode(data)
+        return try await Self.decode(data, using: decoder)
     }
 
     /// Sends a request with a JSON body and decodes the JSON response.
-    func request<Body: Encodable, Response: Decodable>(
+    func request<Body: Encodable, Response: Decodable & Sendable & SendableMetatype>(
         _ method: Method,
         _ path: String,
         query: [URLQueryItem] = [],
         body: Body
     ) async throws -> Response {
         let data = try await send(makeRequest(method, path, query: query, body: body))
-        return try decode(data)
+        return try await Self.decode(data, using: decoder)
     }
 
     // MARK: - Private
@@ -263,7 +263,13 @@ struct APIClient {
         }
     }
 
-    private func decode<Response: Decodable>(_ data: Data) throws -> Response {
+    /// Decodes on the concurrent thread pool instead of the main actor, so parsing a long
+    /// expense list doesn't block the UI.
+    @concurrent
+    private nonisolated static func decode<Response: Decodable & Sendable & SendableMetatype>(
+        _ data: Data,
+        using decoder: JSONDecoder
+    ) async throws -> Response {
         do {
             return try decoder.decode(Response.self, from: data)
         } catch {

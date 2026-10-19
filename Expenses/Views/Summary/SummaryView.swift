@@ -7,7 +7,6 @@
 
 import SwiftUI
 
-@MainActor
 struct SummaryView: View {
     @Environment(CategoryBasket.self) private var categoryBasket
     @Environment(ExpenseBasket.self) private var expenseBasket

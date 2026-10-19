@@ -21,9 +21,8 @@ struct DailyTotal: Identifiable {
     }
 }
 
-@MainActor
 @Observable
-class DailyChartViewModel: MonthFilterable {
+final class DailyChartViewModel: MonthFilterable {
     let monthFilter = MonthFilter()
     var selectedCategory: Category?
     var selectedExtra: ExtraOption = .all

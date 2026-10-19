@@ -8,9 +8,8 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
-class CategoriesViewModel {
+final class CategoriesViewModel {
     var showingForm = false
     var categoryToEdit: Category?
     /// Message of a failed refresh, shown as an alert while the loaded categories stay on screen.

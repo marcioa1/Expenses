@@ -9,7 +9,6 @@ import Testing
 import Security
 @testable import Expenses
 
-@MainActor
 struct LoginViewModelTests {
 
     // MARK: - Helpers

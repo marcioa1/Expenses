@@ -10,7 +10,8 @@ import Foundation
 @testable import Expenses
 
 /// Answers every request of a `URLSession` with `handler`, so the network layer runs without a server.
-private final class StubURLProtocol: URLProtocol {
+/// `nonisolated` because `URLSession` calls it on its own threads, not the main actor.
+private nonisolated final class StubURLProtocol: URLProtocol {
     /// Returns the response for a request, or throws to simulate a transport failure.
     nonisolated(unsafe) static var handler: ((URLRequest) throws -> (Int, Data))?
     /// The last request received, to check its URL and headers.
@@ -36,7 +37,8 @@ private final class StubURLProtocol: URLProtocol {
 }
 
 /// Counts `.sessionExpired` notifications while a test runs.
-private final class SessionExpiredCounter: @unchecked Sendable {
+/// `nonisolated` because notifications can arrive on any thread; the lock protects the count.
+private nonisolated final class SessionExpiredCounter: @unchecked Sendable {
     private let lock = NSLock()
     private var _count = 0
     private var observer: NSObjectProtocol?
@@ -58,7 +60,6 @@ private final class SessionExpiredCounter: @unchecked Sendable {
 /// `APIClient` and `RemoteAuthService` against a stubbed network.
 /// Serialized because the stub's handler is shared.
 @Suite(.serialized)
-@MainActor
 struct NetworkLayerTests {
     private let baseURL = URL(string: "https://api.example.com")!
     private let storedSession = AuthSession(accessToken: "stored-token", tokenType: "bearer")

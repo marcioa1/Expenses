@@ -57,14 +57,15 @@ struct ExpenseRemoteDataProvider: ExpenseRepository {
 }
 
 /// Root `expense` key used by the backend in both directions: `{ "expense": { ... } }`.
-fileprivate struct ExpenseBody<Wrapped> {
+nonisolated fileprivate struct ExpenseBody<Wrapped> {
     let expense: Wrapped
 }
 
-extension ExpenseBody: Encodable where Wrapped: Encodable {}
-extension ExpenseBody: Decodable where Wrapped: Decodable {}
+nonisolated extension ExpenseBody: Encodable where Wrapped: Encodable {}
+nonisolated extension ExpenseBody: Decodable where Wrapped: Decodable {}
+nonisolated extension ExpenseBody: Sendable where Wrapped: Sendable {}
 
 /// Root `expenses` key used by the backend for the list: `{ "expenses": [ { ... } ] }`.
-fileprivate struct ExpensesBody: Decodable {
+nonisolated fileprivate struct ExpensesBody: Decodable {
     let expenses: [Expense]
 }

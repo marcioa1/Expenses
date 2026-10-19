@@ -8,9 +8,8 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
-class MonthlyGridViewModel {
+final class MonthlyGridViewModel {
     private let calendar = Calendar.current
     let monthFilter = MonthFilter()
     private var categoryBasket: CategoryBasket?

@@ -8,9 +8,8 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
-class CategoryFormViewModel {
+final class CategoryFormViewModel {
     var name: String = ""
     var icon: String = "folder"
     var isActive: Bool = true

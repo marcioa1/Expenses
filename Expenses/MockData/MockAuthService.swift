@@ -8,7 +8,6 @@
 #if DEBUG
 import Foundation
 
-@MainActor
 final class MockAuthService: AuthService {
     /// When set, `signIn` throws this error instead of succeeding.
     var error: AuthError?

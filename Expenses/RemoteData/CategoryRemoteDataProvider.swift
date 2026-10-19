@@ -56,15 +56,16 @@ struct CategoryRemoteDataProvider: CategoryRepository {
     }
 }
 /// Root `category` key used by the backend in both directions: `{ "category": { ... } }`.
-fileprivate struct CategoryBody<Wrapped> {
+nonisolated fileprivate struct CategoryBody<Wrapped> {
     let category: Wrapped
 }
 
-extension CategoryBody: Encodable where Wrapped: Encodable {}
-extension CategoryBody: Decodable where Wrapped: Decodable {}
+nonisolated extension CategoryBody: Encodable where Wrapped: Encodable {}
+nonisolated extension CategoryBody: Decodable where Wrapped: Decodable {}
+nonisolated extension CategoryBody: Sendable where Wrapped: Sendable {}
 
 /// Root `categories` key used by the backend for the list: `{ "categories": [ { ... } ] }`.
-fileprivate struct CategoriesBody: Decodable {
+nonisolated fileprivate struct CategoriesBody: Decodable {
     let categories: [Category]
 }
 

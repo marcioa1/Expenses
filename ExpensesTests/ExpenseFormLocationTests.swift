@@ -14,12 +14,10 @@ import CoreLocation
 private typealias Category = Expenses.Category
 
 /// Lets the location lookup reach the view model while it's "waiting for GPS".
-@MainActor
 private final class ViewModelBox {
     var viewModel: ExpenseFormViewModel?
 }
 
-@MainActor
 struct ExpenseFormLocationTests {
 
     private let food = Category(id: 1, name: "Food")

@@ -8,7 +8,6 @@
 #if DEBUG
 import Foundation
 
-@MainActor
 final class MockExpenseDataProvider: @MainActor ExpenseRepository {
     typealias Item = Expense
 

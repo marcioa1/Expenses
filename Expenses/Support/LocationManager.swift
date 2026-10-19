@@ -8,7 +8,6 @@
 import CoreLocation
 import MapKit
 
-@MainActor
 final class LocationManager: NSObject, CLLocationManagerDelegate {
 
     private let manager = CLLocationManager()

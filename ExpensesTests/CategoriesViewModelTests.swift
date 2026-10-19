@@ -8,7 +8,6 @@
 import Testing
 @testable import Expenses
 
-@MainActor
 struct CategoriesViewModelTests {
 
     // MARK: - Helpers

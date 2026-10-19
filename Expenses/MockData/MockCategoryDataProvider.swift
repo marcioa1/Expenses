@@ -8,7 +8,6 @@
 #if DEBUG
 import Foundation
 
-@MainActor
 final class MockCategoryDataProvider: @MainActor CategoryRepository {
     typealias Item = Category
 

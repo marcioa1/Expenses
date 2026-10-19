@@ -12,7 +12,6 @@ import Foundation
 /// Disambiguates from the Objective-C runtime `Category` type exposed by Foundation.
 private typealias Category = Expenses.Category
 
-@MainActor
 struct CategoryFormViewModelTests {
 
     // Food → Restaurants, Groceries; Transport (no children)

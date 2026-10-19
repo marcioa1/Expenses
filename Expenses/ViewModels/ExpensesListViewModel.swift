@@ -8,9 +8,8 @@
 import Foundation
 import Observation
 
-@MainActor
 @Observable
-class ExpensesListViewModel: MonthFilterable {
+final class ExpensesListViewModel: MonthFilterable {
     var showingForm = false
     var expenseToEdit: Expense?
     var selectedCategory: Category?

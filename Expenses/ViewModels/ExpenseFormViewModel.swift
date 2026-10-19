@@ -9,9 +9,8 @@ import Foundation
 import Observation
 import MapKit
 
-@MainActor
 @Observable
-class ExpenseFormViewModel {
+final class ExpenseFormViewModel {
     var selectedCategory: Category?
     var details: String = ""
     var value: Decimal?

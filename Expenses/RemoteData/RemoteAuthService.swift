@@ -25,7 +25,7 @@ final class RemoteAuthService: AuthService {
         let password: String
     }
 
-    private struct SignInResponse: Decodable {
+    private nonisolated struct SignInResponse: Decodable {
         let accessToken: String
         let tokenType: String
 

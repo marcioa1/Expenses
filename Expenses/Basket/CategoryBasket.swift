@@ -12,7 +12,6 @@ import Observation
 ///
 /// Categories are fetched once (`loadIfNeeded()`) and kept in memory; writes go through
 /// the repository and update `categories` in place so every tab sees the change.
-@MainActor
 @Observable
 final class CategoryBasket {
     private let categoryRepository: (any CategoryRepository)?

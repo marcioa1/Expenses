@@ -12,7 +12,6 @@ import Observation
 ///
 /// Expenses are fetched once (`loadIfNeeded()`) and kept in memory, newest first; writes go
 /// through the repository and update `expenses` in place so every tab sees the change.
-@MainActor
 @Observable
 final class ExpenseBasket {
     private let expenseRepository: (any ExpenseRepository)?
