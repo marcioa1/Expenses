@@ -60,7 +60,7 @@ final class CategoryBasket {
             let fetched = try await categoryRepository.fetchAll()
             // Cancelled by `reset()` (logout): don't hand the previous user's data to the next one.
             try Task.checkCancellation()
-            categories = fetched
+            categories = fetched.sorted { $0.name < $1.name }
             hasLoaded = true
             loadState = .success
         } catch {

@@ -30,7 +30,7 @@ class ExpenseFormViewModel {
     private let findPointOfInterest: () async -> PointOfInterest?
 
     var categories: [Category] {
-        (categoryBasket?.categories ?? []).sorted { $0.name < $1.name }
+        (categoryBasket?.categories ?? [])
     }
 
     var isEditing: Bool { expense != nil }

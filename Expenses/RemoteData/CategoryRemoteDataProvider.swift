@@ -32,7 +32,7 @@ struct CategoryRemoteDataProvider: CategoryRepository {
 
     func fetchAll() async throws -> [Category] {
         let response: CategoriesBody = try await client.get(Endpoint.categories)
-        return response.categories.sorted { $0.name < $1.name }
+        return response.categories
     }
 
     func create(_ draft: CategoryDraft) async throws -> Category {
