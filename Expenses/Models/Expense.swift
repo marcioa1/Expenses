@@ -7,7 +7,9 @@
 
 import Foundation
 
-struct Expense: Identifiable, Codable {
+/// `nonisolated` opts this plain value type out of the target's default `MainActor` isolation,
+/// so its `Codable` conformance can be used off the main actor (e.g. when decoding network responses).
+nonisolated struct Expense: Identifiable, Codable {
     var id: Int
     var categoryID: Int = 0
     var details: String?
@@ -105,7 +107,7 @@ struct ExpenseDraft: Encodable, Equatable {
     }
 }
 
-extension KeyedDecodingContainer {
+nonisolated extension KeyedDecodingContainer {
     /// Decodes a money amount sent either as a JSON string (`"25.50"`, how many backends
     /// serialize decimal columns) or as a JSON number (`25.5`).
     /// Strings are parsed with a fixed `.` separator, independent of the device locale.

@@ -8,7 +8,8 @@
 import Foundation
 
 /// The result of a successful sign-in.
-struct AuthSession: Codable, Equatable {
+/// `nonisolated` opts this value type out of the target's default `MainActor` isolation.
+nonisolated struct AuthSession: Codable, Equatable {
     let accessToken: String
     let tokenType: String
 }

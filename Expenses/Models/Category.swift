@@ -12,7 +12,8 @@ import Foundation
 /// The server sends a flat list where each item points to its parent through
 /// `parent_id`; the hierarchy is rebuilt on the client with the helpers in the
 /// `Array<Category>` extension below. IDs are assigned by the server.
-struct Category: Identifiable, Hashable, Codable {
+/// `nonisolated` opts this value type out of the target's default `MainActor` isolation.
+nonisolated struct Category: Identifiable, Hashable, Codable {
     var id: Int
     var name: String
     var isActive: Bool
