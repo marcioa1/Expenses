@@ -115,4 +115,16 @@ struct LoadingStateRecoveryTests {
         await vm.configure(with: categoryBasket, expenseBasket: expenseBasket)
         #expect(vm.loadingState == .success)
     }
+
+    @Test func monthlyGridFailsWhenCategoriesFail() async {
+        let vm = MonthlyGridViewModel()
+        #expect(vm.loadingState == .loading)
+
+        await vm.configure(
+            with: CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1)),
+            expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider())
+        )
+
+        #expect(vm.loadingState == .failed)
+    }
 }

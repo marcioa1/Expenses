@@ -23,26 +23,17 @@ struct MonthlyGridView: View {
     }
     
     var body: some View {
-        let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
         NavigationStack {
-            ScrollView {
-                Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
-                    headerRow
-                    ForEach(1...viewModel.maxDays, id: \.self) { day in
-                        Divider()
-                        GridRow {
-                            Text(String(format: "%02d", day))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .gridColumnAlignment(.leading)
-                            ForEach(viewModel.months, id: \.self) { month in
-                                cell(day: day, month: month, maxTotal: maxTotal)
-                            }
-                        }
-                        .frame(height: 40)
-                    }
+            Group {
+                switch viewModel.loadingState {
+                case .loading:
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .failed:
+                    ErrorView()
+                case .success:
+                    gridContent
                 }
-                .padding()
             }
             .navigationTitle("Monthly Overview")
             .toolbar {
@@ -75,6 +66,30 @@ struct MonthlyGridView: View {
         }
         .task {
             await viewModel.configure(with: categoryBasket, expenseBasket: expenseBasket)
+        }
+    }
+
+    private var gridContent: some View {
+        // Only computed when the grid is actually drawn, not while loading or after a failure.
+        let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
+        return ScrollView {
+            Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
+                headerRow
+                ForEach(1...viewModel.maxDays, id: \.self) { day in
+                    Divider()
+                    GridRow {
+                        Text(String(format: "%02d", day))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .gridColumnAlignment(.leading)
+                        ForEach(viewModel.months, id: \.self) { month in
+                            cell(day: day, month: month, maxTotal: maxTotal)
+                        }
+                    }
+                    .frame(height: 40)
+                }
+            }
+            .padding()
         }
     }
 
