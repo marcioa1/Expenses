@@ -14,7 +14,7 @@ import Foundation
 /// - `POST {baseURL}/auth/login`  body `{ "email", "password" }`
 ///   → `200 { "userId", "email", "accessToken", "refreshToken"?, "expiresAt"? }`
 ///   → `401` on invalid credentials
-/// - `POST {baseURL}/auth/logout` with `Authorization: Bearer <accessToken>`
+/// - `POST {baseURL}/auth/logout` with `Authorization: <tokenType> <accessToken>` (e.g. `Bearer …`)
 @MainActor
 final class RemoteAuthService: AuthService {
     private enum Endpoint {
@@ -68,7 +68,12 @@ final class RemoteAuthService: AuthService {
     func signOut(_ authSession: AuthSession) async throws {
         var request = URLRequest(url: baseURL.appending(path: Endpoint.logout))
         request.httpMethod = "POST"
-        request.setValue("Bearer \(authSession.accessToken)", forHTTPHeaderField: "Authorization")
+        // Same format as `APIClient`: use the token type the server issued instead of assuming "Bearer",
+        // otherwise a different token type would make logout fail silently and leave the token valid.
+        request.setValue(
+            "\(authSession.tokenType.capitalized) \(authSession.accessToken)",
+            forHTTPHeaderField: "Authorization"
+        )
         _ = try await send(request)
     }
 
