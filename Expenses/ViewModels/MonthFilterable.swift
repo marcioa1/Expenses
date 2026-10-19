@@ -18,7 +18,4 @@ extension MonthFilterable {
         monthFilter.filteredExpenses(from: allExpenses)
     }
 
-    func totalAmount(from allExpenses: [Expense]) -> Decimal {
-        monthFilter.totalAmount(from: allExpenses)
-    }
 }

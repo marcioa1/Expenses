@@ -71,7 +71,7 @@ struct MonthlyGridView: View {
 
     private var gridContent: some View {
         // Only computed when the grid is actually drawn, not while loading or after a failure.
-        let maxTotal = viewModel.maxTotal(from: viewModel.filteredExpenses)
+        let maxTotal = viewModel.maxTotal
         return ScrollView {
             Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
                 headerRow

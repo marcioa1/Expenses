@@ -42,7 +42,7 @@ struct SummaryView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     ToolbarTotalView(
-                        totalAmount: viewModel.totalAmount(from: viewModel.expenses)
+                        totalAmount: viewModel.totalAmount
                     )
                 }
 
@@ -66,11 +66,11 @@ struct SummaryView: View {
         List {
             CategoryBreakdownView(
                 expensesByParent: viewModel.expensesByParent(),
-                totalAmount: viewModel.totalAmount(from: viewModel.expenses),
+                totalAmount: viewModel.totalAmount,
                 currencyCode: CurrencyHelper.code
             )
             RecentExpensesView(
-                expenses: Array(viewModel.filteredExpenses(from: viewModel.expenses).prefix(7)),
+                expenses: Array(viewModel.filteredExpenses.prefix(7)),
                 categories: viewModel.categories,
                 expenseToEdit: $viewModel.expenseToEdit
             )

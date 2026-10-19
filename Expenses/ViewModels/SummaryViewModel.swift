@@ -22,6 +22,15 @@ class SummaryViewModel: MonthFilterable {
     var expenses: [Expense] {
         expenseBasket?.expenses ?? []
     }
+    
+    var totalAmount: Decimal {
+        monthFilter.totalAmount(from: filteredExpenses)
+    }
+
+    var filteredExpenses: [Expense] {
+        monthFilter.filteredExpenses(from: expenses)
+    }
+    
     /// Derived from the shared baskets, so every tab agrees on whether the data is available.
     var loadingState: LoadingState {
         guard let categoryBasket, let expenseBasket else { return .loading }

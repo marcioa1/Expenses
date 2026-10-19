@@ -98,10 +98,10 @@ class MonthlyGridViewModel {
         return sum > 0 ? sum : nil
     }
 
-    func maxTotal(from expenses: [Expense]) -> Decimal {
+    var maxTotal: Decimal {
         var result = Decimal.zero
         for month in months {
-            if let t = accumulated(through: daysInMonth(month), in: month, from: expenses) {
+            if let t = accumulated(through: daysInMonth(month), in: month, from: filteredExpenses) {
                 result = Swift.max(result, t)
             }
         }
