@@ -18,6 +18,11 @@ final class ExpenseBasket {
     private let expenseRepository: (any ExpenseRepository)?
     private(set) var expenses: [Expense]
     private(set) var hasLoaded = false
+    /// Whether expenses are available, shared by every screen that shows them.
+    ///
+    /// Only the **first** load can fail the state: once expenses are loaded, a failed refresh
+    /// keeps them (and `.success`) and just throws, so screens keep their data and show a message.
+    private(set) var loadState: LoadingState = .loading
     /// In-flight fetch, so tabs appearing at the same time share a single request.
     @ObservationIgnored private var loadTask: Task<Void, Error>?
 
@@ -30,7 +35,7 @@ final class ExpenseBasket {
 
     // MARK: - Loading
 
-    /// Fetches expenses only if they haven't been loaded yet.
+    /// Fetches expenses only if they haven't been loaded yet; after a failure, the next call retries.
     func loadIfNeeded() async throws {
         guard !hasLoaded else { return }
         if let loadTask {
@@ -44,10 +49,27 @@ final class ExpenseBasket {
 
     /// Always fetches expenses from the repository (e.g. pull-to-refresh).
     func getAllExpenses() async throws {
-        guard let expenseRepository else { return }
-        expenses = try await expenseRepository.fetchAll()
-        sortExpenses()
-        hasLoaded = true
+        // Without a repository (previews, tests) the initial expenses are all there is.
+        guard let expenseRepository else {
+            hasLoaded = true
+            loadState = .success
+            return
+        }
+        // A retry after a failed first load shows the spinner again; a refresh keeps the data on screen.
+        if !hasLoaded { loadState = .loading }
+        do {
+            let fetched = try await expenseRepository.fetchAll()
+            // Cancelled by `reset()` (logout): don't hand the previous user's data to the next one.
+            try Task.checkCancellation()
+            expenses = fetched
+            sortExpenses()
+            hasLoaded = true
+            loadState = .success
+        } catch {
+            // A cancelled load isn't a failure; `reset()` already put the state back to `.loading`.
+            if !hasLoaded && !Task.isCancelled { loadState = .failed }
+            throw error
+        }
     }
 
     /// Drops all loaded expenses (e.g. on logout) so the next user starts with a fresh fetch.
@@ -56,6 +78,7 @@ final class ExpenseBasket {
         loadTask = nil
         expenses = []
         hasLoaded = false
+        loadState = .loading
     }
 
     // MARK: - Writes

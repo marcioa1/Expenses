@@ -22,25 +22,24 @@ class SummaryViewModel: MonthFilterable {
     var expenses: [Expense] {
         expenseBasket?.expenses ?? []
     }
-    var loadingState: LoadingState = .loading
+    /// Derived from the shared baskets, so every tab agrees on whether the data is available.
+    var loadingState: LoadingState {
+        guard let categoryBasket, let expenseBasket else { return .loading }
+        return .combined(categoryBasket.loadState, expenseBasket.loadState)
+    }
 
     func category(for expense: Expense) -> Category? {
         categoryBasket?.category(withID: expense.categoryID)
     }
 
-    init(previewState: LoadingState = .loading) {
-        loadingState = previewState
-    }
-
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
-        // Both loads run in parallel; the screen only succeeds if both do,
-        // so one load finishing later can't overwrite the other's failure.
-        async let categoriesLoaded = loadCategories()
-        async let expensesLoaded = loadExpenses()
-        let succeeded = await (categoriesLoaded, expensesLoaded) == (true, true)
-        loadingState = succeeded ? .success : .failed
+        // The baskets are shared by every tab and months are filtered in memory, so only the
+        // first call actually hits the server. Errors are reflected in each basket's `loadState`.
+        async let categories: Void? = try? categoryBasket.loadIfNeeded()
+        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
+        _ = await (categories, expenses)
     }
 
     /// Months are filtered in memory from the shared basket, so changing month needs no fetch.
@@ -78,29 +77,4 @@ class SummaryViewModel: MonthFilterable {
             .filter { $0.total > 0 }
             .sorted { $0.total > $1.total }
     }
-
-    /// - Returns: `true` if expenses are available.
-    private func loadExpenses() async -> Bool {
-        guard let expenseBasket else { return false }
-        do {
-            // The basket is shared by every tab and months are filtered in memory,
-            // so only the first call actually hits the server.
-            try await expenseBasket.loadIfNeeded()
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    /// - Returns: `true` if categories are available.
-    private func loadCategories() async -> Bool {
-        guard let categoryBasket else { return false }
-        do {
-            try await categoryBasket.loadIfNeeded()
-            return true
-        } catch {
-            return false
-        }
-    }
-
 }

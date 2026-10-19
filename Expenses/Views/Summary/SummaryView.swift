@@ -21,10 +21,6 @@ struct SummaryView: View {
         _viewModel = State(wrappedValue: SummaryViewModel())
     }
 
-    init(viewModel: SummaryViewModel) {
-        _viewModel = State(wrappedValue: viewModel)
-    }
-    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -83,9 +79,10 @@ struct SummaryView: View {
 }
 
 #Preview("Error") {
-    SummaryView(viewModel: SummaryViewModel(previewState: .failed))
-        .environment(CategoryBasket())
-        .environment(ExpenseBasket())
+    // Loading expenses fails, so the Summary shows its error screen.
+    SummaryView()
+        .environment(CategoryBasket(categories: [Category(id: 1, name: "Food", icon: "fork.knife")]))
+        .environment(ExpenseBasket(expenseRepository: MockExpenseDataProvider(fetchError: APIError.network)))
 }
 
 #Preview("Success") {

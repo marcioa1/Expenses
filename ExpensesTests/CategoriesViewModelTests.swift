@@ -111,16 +111,20 @@ struct CategoriesViewModelTests {
         #expect(!vm.categories.isEmpty)
     }
 
-    @Test func refreshFailureShowsError() async {
+    @Test func refreshFailureKeepsCategoriesAndShowsMessage() async {
         let vm = CategoriesViewModel()
         // First load succeeds, the pull-to-refresh fails.
         let basket = CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1, succeedFirst: true))
 
         await vm.configure(with: basket)
         #expect(vm.loadingState == .success)
+        #expect(vm.errorMessage == nil)
 
         await vm.refresh()
-        #expect(vm.loadingState == .failed)
+        // The screen keeps showing the categories it already had and tells the user why they didn't change.
+        #expect(vm.loadingState == .success)
+        #expect(!vm.categories.isEmpty)
+        #expect(vm.errorMessage != nil)
     }
 }
 

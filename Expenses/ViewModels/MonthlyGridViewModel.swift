@@ -25,7 +25,12 @@ class MonthlyGridViewModel {
     }
     var selectedCategory: Category?
     var selectedExtra: ExtraOption = .all
-    var loadingState: LoadingState = .loading
+
+    /// Derived from the shared baskets, so every tab agrees on whether the data is available.
+    var loadingState: LoadingState {
+        guard let categoryBasket, let expenseBasket else { return .loading }
+        return .combined(categoryBasket.loadState, expenseBasket.loadState)
+    }
 
     var filteredExpenses: [Expense] {
         var result = expenses
@@ -47,35 +52,11 @@ class MonthlyGridViewModel {
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
         self.categoryBasket = categoryBasket
         self.expenseBasket = expenseBasket
-        // Both loads run in parallel; the screen only succeeds if both do. The state is set
-        // from this call's results alone, so a later successful retry clears an earlier failure.
-        async let categoriesLoaded = loadCategories()
-        async let expensesLoaded = loadExpenses()
-        let succeeded = await (categoriesLoaded, expensesLoaded) == (true, true)
-        loadingState = succeeded ? .success : .failed
-    }
-
-    /// - Returns: `true` if categories are available.
-    private func loadCategories() async -> Bool {
-        guard let categoryBasket else { return false }
-        do {
-            try await categoryBasket.loadIfNeeded()
-            return true
-        } catch {
-            return false
-        }
-    }
-
-    /// Loads expenses once; the shared basket keeps them up to date after each write.
-    /// - Returns: `true` if expenses are available.
-    private func loadExpenses() async -> Bool {
-        guard let expenseBasket else { return false }
-        do {
-            try await expenseBasket.loadIfNeeded()
-            return true
-        } catch {
-            return false
-        }
+        // Loads once; the shared baskets keep the data up to date after each write.
+        // Errors are reflected in each basket's `loadState`, which `loadingState` reads.
+        async let categories: Void? = try? categoryBasket.loadIfNeeded()
+        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
+        _ = await (categories, expenses)
     }
 
     /// From the first day of the oldest month to the last second of the newest month shown.

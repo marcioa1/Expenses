@@ -13,13 +13,17 @@ final class MockExpenseDataProvider: @MainActor ExpenseRepository {
     typealias Item = Expense
 
     private var expenses: [Expense]
+    /// When set, `fetchAll` throws this error instead of returning expenses (e.g. to preview the error screen).
+    var fetchError: Error?
 
-    init(expenses: [Expense] = []) {
+    init(expenses: [Expense] = [], fetchError: Error? = nil) {
         self.expenses = expenses
+        self.fetchError = fetchError
     }
 
     func fetchAll() async throws -> [Expense] {
-        expenses.sorted { $0.datetime > $1.datetime }
+        if let fetchError { throw fetchError }
+        return expenses.sorted { $0.datetime > $1.datetime }
     }
 
     func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] {
