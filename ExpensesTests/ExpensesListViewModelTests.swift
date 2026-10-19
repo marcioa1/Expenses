@@ -126,4 +126,29 @@ struct ExpensesListViewModelTests {
 
         #expect(basket.expense(withID: 1)?.extraordinary == true)
     }
+
+    // MARK: - Empty states
+
+    @Test func noExpensesAtAll() {
+        let vm = makeViewModel()
+
+        #expect(vm.expenses.isEmpty)
+        #expect(vm.hasAnyExpenses == false)
+    }
+
+    @Test func emptyMonthWithExpensesInOtherMonths() throws {
+        // The selected month defaults to the current one; this expense is two months earlier.
+        let twoMonthsAgo = try #require(Calendar.current.date(byAdding: .month, value: -2, to: .now))
+        let vm = makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10, datetime: twoMonthsAgo)])
+
+        #expect(vm.expenses.isEmpty)
+        #expect(vm.hasAnyExpenses)
+    }
+
+    @Test func monthWithExpenses() {
+        let vm = makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10)])
+
+        #expect(!vm.expenses.isEmpty)
+        #expect(vm.hasAnyExpenses)
+    }
 }

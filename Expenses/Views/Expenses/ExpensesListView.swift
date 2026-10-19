@@ -136,7 +136,15 @@ struct ExpensesListView: View {
             await viewModel.refreshExpenses()
         }
         .overlay {
-            if viewModel.expenses.isEmpty {
+            if viewModel.expenses.isEmpty && viewModel.hasAnyExpenses {
+                // Other months have expenses; only the selected one is empty.
+                ContentUnavailableView(
+                    "No Expenses This Month",
+                    systemImage: "calendar",
+                    description: Text("Choose another month or add a new expense.")
+                )
+            } else if viewModel.expenses.isEmpty {
+                // Nothing recorded yet, in any month.
                 ContentUnavailableView(
                     "No Expenses",
                     systemImage: "creditcard",

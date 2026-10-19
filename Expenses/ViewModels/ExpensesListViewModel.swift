@@ -33,6 +33,12 @@ class ExpensesListViewModel: MonthFilterable {
         expenseBasket?.expenses(from: monthFilter.monthStart(), to: monthFilter.monthEnd()) ?? []
     }
 
+    /// Whether the user has any expense at all, in any month. Lets the empty state tell
+    /// "nothing recorded yet" apart from "nothing in this month".
+    var hasAnyExpenses: Bool {
+        !(expenseBasket?.expenses.isEmpty ?? true)
+    }
+
     /// Months are filtered in memory from the shared basket, so changing month needs no fetch.
     var selectedMonthIndex: Int {
         get { monthFilter.selectedMonthIndex }
