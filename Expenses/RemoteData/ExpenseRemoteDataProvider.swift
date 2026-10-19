@@ -11,7 +11,6 @@ import Foundation
 ///
 /// Assumed contract (adjust `Endpoint` and `Expense.CodingKeys` to match the real backend):
 /// - `GET    api/expenses`                   → `200 { "expenses": [Expense] }`
-/// - `GET    api/expenses?from=<iso>&to=<iso>` → `200 { "expenses": [Expense] }` within the range
 /// - `POST   api/expenses`                   body `{ "expense": ExpenseDraft }` (no `id`) → `200/201 { "expense": Expense }` with the new `id`
 /// - `PUT    api/expenses/{id}`              body `{ "expense": Expense }` → `200 { "expense": Expense }`
 /// - `DELETE api/expenses/{id}`              → `2xx`
@@ -33,17 +32,6 @@ struct ExpenseRemoteDataProvider: ExpenseRepository {
 
     func fetchAll() async throws -> [Expense] {
         let response: ExpensesBody = try await client.get(Endpoint.expenses)
-        return response.expenses.sorted { $0.datetime > $1.datetime }
-    }
-
-    func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] {
-        let response: ExpensesBody = try await client.get(
-            Endpoint.expenses,
-            query: [
-                URLQueryItem(name: "from", value: startDate.formatted(.iso8601)),
-                URLQueryItem(name: "to", value: endDate.formatted(.iso8601))
-            ]
-        )
         return response.expenses.sorted { $0.datetime > $1.datetime }
     }
 

@@ -19,6 +19,16 @@ struct ExpenseFormViewModelTests {
         CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: categories))
     }
 
+    /// Configures `vm` with `categories` and an empty expense basket.
+    private func configure(_ vm: ExpenseFormViewModel, categories: [Category]) async {
+        await vm.configure(with: makeBasket(categories: categories), expenseBasket: ExpenseBasket())
+    }
+
+    /// A form for a new expense whose location lookup finds nothing, so no real `LocationManager` is used.
+    private func makeNewExpenseForm() -> ExpenseFormViewModel {
+        ExpenseFormViewModel(findPointOfInterest: { nil })
+    }
+
     // MARK: - Initial state
 
     @Test func initWithoutExpenseIsNotEditing() {
@@ -33,7 +43,7 @@ struct ExpenseFormViewModelTests {
         let food = Category(id: 1, name: "Food")
         let expense = Expense(id: 1, categoryID: food.id, value: 25, locationName: "Starbucks")
         let vm = ExpenseFormViewModel(expense: expense)
-        await vm.configure(with: makeBasket(categories: [food]))
+        await configure(vm, categories: [food])
         #expect(vm.isEditing)
         #expect(vm.selectedCategory?.name == "Food")
         #expect(vm.value == 25)
@@ -67,19 +77,19 @@ struct ExpenseFormViewModelTests {
         #expect(vm.canSave)
     }
 
-    // MARK: - configure(with:)
+    // MARK: - configure(with:expenseBasket:)
 
     @Test func configurePopulatesCategoriesSortedByName() async {
         let transport = Category(id: 2, name: "Transport")
         let food = Category(id: 1, name: "Food")
-        let vm = ExpenseFormViewModel()
-        await vm.configure(with: makeBasket(categories: [transport, food]))
+        let vm = makeNewExpenseForm()
+        await configure(vm, categories: [transport, food])
         #expect(vm.categories.map(\.name) == ["Food", "Transport"])
     }
 
     @Test func configureWithEmptyRepoLeavesEmptyCategories() async {
-        let vm = ExpenseFormViewModel()
-        await vm.configure(with: makeBasket(categories: []))
+        let vm = makeNewExpenseForm()
+        await configure(vm, categories: [])
         #expect(vm.categories.isEmpty)
     }
 
@@ -88,8 +98,8 @@ struct ExpenseFormViewModelTests {
     @Test func leafCategoriesExcludesParents() async {
         let parent = Category(id: 1, name: "Food")
         let child = Category(id: 3, name: "Restaurants", parentID: parent.id)
-        let vm = ExpenseFormViewModel()
-        await vm.configure(with: makeBasket(categories: [parent, child]))
+        let vm = makeNewExpenseForm()
+        await configure(vm, categories: [parent, child])
         let leaves = vm.leafCategories()
         #expect(leaves.count == 1)
         #expect(leaves.first?.name == "Restaurants")
@@ -98,8 +108,8 @@ struct ExpenseFormViewModelTests {
     @Test func leafCategoriesIncludesAllWhenNoneHaveChildren() async {
         let food = Category(id: 1, name: "Food")
         let transport = Category(id: 2, name: "Transport")
-        let vm = ExpenseFormViewModel()
-        await vm.configure(with: makeBasket(categories: [food, transport]))
+        let vm = makeNewExpenseForm()
+        await configure(vm, categories: [food, transport])
         #expect(vm.leafCategories().count == 2)
     }
     
@@ -107,8 +117,8 @@ struct ExpenseFormViewModelTests {
     @Test func activeCategoriesDoNotIncludeInactiveCategories() async {
         let food = Category(id: 1, name: "Food", isActive: true)
         let transport = Category(id: 2, name: "Transport", isActive: false)
-        let vm = ExpenseFormViewModel()
-        await vm.configure(with: makeBasket(categories: [food, transport]))
+        let vm = makeNewExpenseForm()
+        await configure(vm, categories: [food, transport])
         #expect(vm.activeCategories().count == 1)
         #expect(vm.activeCategories().map{$0.id}.contains([1]))
         #expect(!(vm.activeCategories().map{$0.id}.contains(2)))
@@ -120,8 +130,8 @@ struct ExpenseFormViewModelTests {
     @Test func selectableCategoriesExcludesInactiveForNewExpense() async {
         let food = Category(id: 1, name: "Food", isActive: true)
         let transport = Category(id: 2, name: "Transport", isActive: false)
-        let vm = ExpenseFormViewModel()
-        await vm.configure(with: makeBasket(categories: [food, transport]))
+        let vm = makeNewExpenseForm()
+        await configure(vm, categories: [food, transport])
         #expect(vm.selectableCategories().map(\.id) == [1])
     }
 
@@ -131,7 +141,7 @@ struct ExpenseFormViewModelTests {
         let other = Category(id: 3, name: "Other", isActive: false)
         let expense = Expense(id: 1, categoryID: transport.id, value: 10)
         let vm = ExpenseFormViewModel(expense: expense)
-        await vm.configure(with: makeBasket(categories: [food, transport, other]))
+        await configure(vm, categories: [food, transport, other])
         #expect(vm.selectableCategories().map(\.id) == [1, 2])
         #expect(vm.selectedCategory?.id == transport.id)
     }

@@ -34,13 +34,6 @@ final class MockExpenseDataProvider: @MainActor ExpenseRepository {
         return expenses.sorted { $0.datetime > $1.datetime }
     }
 
-    func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] {
-        try failFetchIfNeeded()
-        return expenses
-            .filter { $0.datetime >= startDate && $0.datetime <= endDate }
-            .sorted { $0.datetime > $1.datetime }
-    }
-
     /// Mimics the server by assigning the next available `id`.
     func create(_ draft: ExpenseDraft) async throws -> Expense {
         if let writeError { throw writeError }
