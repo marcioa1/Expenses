@@ -11,6 +11,7 @@ import Testing
 
 // Serialized because every test reads and writes the same Keychain item.
 @Suite(.serialized)
+@MainActor
 struct SessionStoreTests {
     // A dedicated key so tests never touch the app's real session.
     private let store = SessionStore(service: "SessionStoreTests", account: "testSession")

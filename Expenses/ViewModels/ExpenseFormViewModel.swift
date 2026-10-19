@@ -20,6 +20,8 @@ class ExpenseFormViewModel {
     var latitude: Double?
     var longitude: Double?
     var extraordinary: Bool = false
+    var isSaving = false
+    var errorMessage: String?
 
     let expense: Expense?
     private var categoryBasket: CategoryBasket?
@@ -34,7 +36,8 @@ class ExpenseFormViewModel {
     var isEditing: Bool { expense != nil }
 
     var canSave: Bool {
-        selectedCategory != nil && value != nil && value! > 0
+        guard selectedCategory != nil, let value else { return false }
+        return value > 0 && !isSaving
     }
 
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
@@ -94,32 +97,46 @@ class ExpenseFormViewModel {
     }
 
     /// Creates or updates the expense through the shared basket, which sends it to the server.
-    func save() async throws {
-        guard let expenseBasket, let selectedCategory, let value else { return }
+    /// - Returns: `true` only when the expense was actually saved; otherwise `errorMessage` is set,
+    ///   so the form never closes as if it had saved when it didn't.
+    func save() async -> Bool {
+        guard let expenseBasket, let selectedCategory, let value, value > 0 else {
+            errorMessage = String(localized: "Couldn't save the expense. Please try again.")
+            return false
+        }
+        isSaving = true
+        defer { isSaving = false }
+
         let trimmedDetails = details.trimmingCharacters(in: .whitespaces)
         let trimmedLocation = locationName.trimmingCharacters(in: .whitespaces)
-        if var updated = expense {
-            updated.categoryID = selectedCategory.id
-            updated.details = trimmedDetails.isEmpty ? nil : trimmedDetails
-            updated.value = value
-            updated.datetime = datetime
-            updated.locationName = trimmedLocation.isEmpty ? nil : trimmedLocation
-            updated.latitude = latitude
-            updated.longitude = longitude
-            updated.extraordinary = extraordinary
-            try await expenseBasket.update(updated)
-        } else {
-            let draft = ExpenseDraft(
-                categoryID: selectedCategory.id,
-                details: trimmedDetails.isEmpty ? nil : trimmedDetails,
-                value: value,
-                datetime: datetime,
-                latitude: latitude,
-                longitude: longitude,
-                locationName: trimmedLocation.isEmpty ? nil : trimmedLocation,
-                extraordinary: extraordinary
-            )
-            try await expenseBasket.create(draft)
+        do {
+            if var updated = expense {
+                updated.categoryID = selectedCategory.id
+                updated.details = trimmedDetails.isEmpty ? nil : trimmedDetails
+                updated.value = value
+                updated.datetime = datetime
+                updated.locationName = trimmedLocation.isEmpty ? nil : trimmedLocation
+                updated.latitude = latitude
+                updated.longitude = longitude
+                updated.extraordinary = extraordinary
+                try await expenseBasket.update(updated)
+            } else {
+                let draft = ExpenseDraft(
+                    categoryID: selectedCategory.id,
+                    details: trimmedDetails.isEmpty ? nil : trimmedDetails,
+                    value: value,
+                    datetime: datetime,
+                    latitude: latitude,
+                    longitude: longitude,
+                    locationName: trimmedLocation.isEmpty ? nil : trimmedLocation,
+                    extraordinary: extraordinary
+                )
+                try await expenseBasket.create(draft)
+            }
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
         }
     }
 

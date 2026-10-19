@@ -9,6 +9,7 @@ import Testing
 import Foundation
 @testable import Expenses
 
+@MainActor
 struct ExpenseDecodingTests {
 
     private func decode(value: String = "10", datetime: String = "2026-10-13T10:00:00Z") throws -> Expense {

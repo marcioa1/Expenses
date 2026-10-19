@@ -192,12 +192,72 @@ struct ExpenseFormViewModelTests {
         vm.selectedCategory = transport
         vm.value = 40
         vm.details = "  Taxi  "
-        try await vm.save()
+        let didSave = await vm.save()
 
+        #expect(didSave)
+        #expect(vm.errorMessage == nil)
+        #expect(vm.isSaving == false)
         let saved = try #require(expenseBasket.expense(withID: 7))
         #expect(saved.categoryID == transport.id)
         #expect(saved.value == 40)
         #expect(saved.details == "Taxi")
         #expect(expenseBasket.expenses.count == 1)
     }
+
+    @Test func saveWithoutConfigureReportsFailure() async {
+        // Used to return silently, which the form treated as success and closed without saving.
+        let vm = ExpenseFormViewModel(findPointOfInterest: { nil })
+        vm.selectedCategory = Category(id: 1, name: "Food")
+        vm.value = 10
+
+        let didSave = await vm.save()
+
+        #expect(didSave == false)
+        #expect(vm.errorMessage != nil)
+    }
+
+    @Test func saveFailureKeepsFormOpenWithError() async throws {
+        let food = Category(id: 1, name: "Food")
+        let expense = Expense(id: 7, categoryID: food.id, value: 25)
+        let expenseBasket = ExpenseBasket(expenseRepository: FailingWriteExpenseRepository(expenses: [expense]))
+        try await expenseBasket.loadIfNeeded()
+
+        let vm = ExpenseFormViewModel(expense: expense)
+        await vm.configure(with: makeBasket(categories: [food]), expenseBasket: expenseBasket)
+        vm.value = 99
+
+        let didSave = await vm.save()
+
+        #expect(didSave == false)
+        #expect(vm.errorMessage == APIError.network.errorDescription)
+        #expect(vm.isSaving == false)
+        // Nothing changed locally either.
+        #expect(expenseBasket.expense(withID: 7)?.value == 25)
+    }
+
+    @Test func cannotSaveWhileSaving() {
+        let vm = ExpenseFormViewModel()
+        vm.selectedCategory = Category(id: 1, name: "Food")
+        vm.value = 10
+        #expect(vm.canSave)
+
+        vm.isSaving = true
+        #expect(vm.canSave == false)
+    }
+}
+
+/// Expense repository that loads fine but whose writes fail, like a network error on save.
+@MainActor
+private final class FailingWriteExpenseRepository: @MainActor ExpenseRepository {
+    private let expenses: [Expense]
+
+    init(expenses: [Expense]) {
+        self.expenses = expenses
+    }
+
+    func fetchAll() async throws -> [Expense] { expenses }
+    func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] { expenses }
+    func create(_ draft: ExpenseDraft) async throws -> Expense { throw APIError.network }
+    func update(_ expense: Expense) async throws -> Expense { throw APIError.network }
+    func delete(_ expense: Expense) async throws { throw APIError.network }
 }

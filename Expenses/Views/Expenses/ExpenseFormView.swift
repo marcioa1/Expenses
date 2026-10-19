@@ -13,8 +13,6 @@ struct ExpenseFormView: View {
     @Environment(ExpenseBasket.self) private var expenseBasket
 
     @State private var viewModel: ExpenseFormViewModel
-    @State private var isSaving = false
-    @State private var errorMessage: String?
     @FocusState private var isValueFocused: Bool
 
     init(expense: Expense? = nil) {
@@ -63,46 +61,39 @@ struct ExpenseFormView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        Task { await save() }
+                        // The form only closes once the expense is saved on the server.
+                        Task {
+                            if await viewModel.save() {
+                                dismiss()
+                            }
+                        }
                     } label: {
                         Text("Save")
-                            .opacity(isSaving ? 0 : 1)
+                            .opacity(viewModel.isSaving ? 0 : 1)
                             .overlay {
-                                if isSaving {
+                                if viewModel.isSaving {
                                     ProgressView()
                                 }
                             }
                     }
-                    .disabled(!viewModel.canSave || isSaving)
+                    .disabled(!viewModel.canSave)
                 }
             }
             .alert(
                 "Couldn't save expense",
                 isPresented: Binding(
-                    get: { errorMessage != nil },
-                    set: { if !$0 { errorMessage = nil } }
+                    get: { viewModel.errorMessage != nil },
+                    set: { if !$0 { viewModel.errorMessage = nil } }
                 )
             ) {
                 Button("OK", role: .cancel) {}
             } message: {
-                Text(errorMessage ?? "")
+                Text(viewModel.errorMessage ?? "")
             }
-            .interactiveDismissDisabled(isSaving)
+            .interactiveDismissDisabled(viewModel.isSaving)
             .task {
                 await viewModel.configure(with: categoryBasket, expenseBasket: expenseBasket)
             }
-        }
-    }
-
-    /// Waits for the server; the form only closes once the expense is saved.
-    private func save() async {
-        isSaving = true
-        defer { isSaving = false }
-        do {
-            try await viewModel.save()
-            dismiss()
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 }
