@@ -25,7 +25,8 @@ struct CategoryRemoteDataProvider: CategoryRepository {
 
     private let client: APIClient
 
-    init(client: APIClient = APIClient()) {
+    /// - Parameter client: The app's shared `APIClient`, built once in `ExpensesApp`.
+    init(client: APIClient) {
         self.client = client
     }
 

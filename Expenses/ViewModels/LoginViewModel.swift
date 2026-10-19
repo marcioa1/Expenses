@@ -18,7 +18,8 @@ class LoginViewModel {
     private let authService: any AuthService
     private let sessionStore: any SessionStoring
 
-    init(authService: any AuthService, sessionStore: any SessionStoring = SessionStore()) {
+    /// - Parameter sessionStore: The app's session store (from `ExpensesApp`), where the new session is saved.
+    init(authService: any AuthService, sessionStore: any SessionStoring) {
         self.authService = authService
         self.sessionStore = sessionStore
     }

@@ -7,15 +7,13 @@
 
 import Foundation
 
-/// `AuthService` backed by an HTTP JSON API.
+/// `AuthService` backed by the HTTP JSON API, sending through the app's shared `APIClient`.
 ///
-/// Assumed contract (adjust `Endpoint`, `SignInRequest` and `SignInResponse`
-/// to match the real backend):
-/// - `POST {baseURL}/auth/login`  body `{ "email", "password" }`
-///   → `200 { "userId", "email", "accessToken", "refreshToken"?, "expiresAt"? }`
-///   → `401` on invalid credentials
-/// - `POST {baseURL}/auth/logout` with `Authorization: <tokenType> <accessToken>` (e.g. `Bearer …`)
-@MainActor
+/// Contract:
+/// - `POST api/auth/login`  body `{ "email", "password" }`
+///   → `200 { "access_token", "token_type" }`
+///   → `401` / `403` on invalid credentials
+/// - `POST api/auth/logout` with `Authorization: <tokenType> <accessToken>` (e.g. `Bearer …`)
 final class RemoteAuthService: AuthService {
     private enum Endpoint {
         static let login = "api/auth/login"
@@ -28,76 +26,57 @@ final class RemoteAuthService: AuthService {
     }
 
     private struct SignInResponse: Decodable {
-        let access_token: String
-        let token_type: String
+        let accessToken: String
+        let tokenType: String
+
+        enum CodingKeys: String, CodingKey {
+            case accessToken = "access_token"
+            case tokenType = "token_type"
+        }
     }
 
-    private let baseURL: URL
-    private let session: URLSession
+    private let client: APIClient
 
-    private let encoder = JSONEncoder()
-    private let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
-
-    init(baseURL: URL, session: URLSession = .shared) {
-        self.baseURL = baseURL
-        self.session = session
+    /// - Parameter client: The app's shared `APIClient`, built once in `ExpensesApp`.
+    init(client: APIClient) {
+        self.client = client
     }
 
     func signIn(email: String, password: String) async throws -> AuthSession {
-        var request = URLRequest(url: baseURL.appending(path: Endpoint.login))
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try encoder.encode(SignInRequest(email: email, password: password))
-
-        let data = try await send(request)
-
-        //TODO rewirte SignInResponse to get data from server at login
-        guard let response = try? decoder.decode(SignInResponse.self, from: data) else {
-            throw AuthError.invalidResponse
+        do {
+            let response: SignInResponse = try await client.post(
+                Endpoint.login,
+                body: SignInRequest(email: email, password: password)
+            )
+            return AuthSession(accessToken: response.accessToken, tokenType: response.tokenType)
+        } catch let error as APIError {
+            throw AuthError(error)
         }
-        return AuthSession(
-            accessToken: response.access_token,
-            tokenType: response.token_type //,
-        )
     }
 
     func signOut(_ authSession: AuthSession) async throws {
-        var request = URLRequest(url: baseURL.appending(path: Endpoint.logout))
-        request.httpMethod = "POST"
-        // Same format as `APIClient`: use the token type the server issued instead of assuming "Bearer",
-        // otherwise a different token type would make logout fail silently and leave the token valid.
-        request.setValue(
-            "\(authSession.tokenType.capitalized) \(authSession.accessToken)",
-            forHTTPHeaderField: "Authorization"
-        )
-        _ = try await send(request)
-    }
-
-    /// Sends the request and maps transport / HTTP failures to `AuthError`.
-    private func send(_ request: URLRequest) async throws -> Data {
-        let data: Data
-        let response: URLResponse
         do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw AuthError.network
+            // The app clears the stored session before signing out, so the token is passed explicitly.
+            try await client.post(Endpoint.logout, authorizedBy: authSession)
+        } catch let error as APIError {
+            throw AuthError(error)
         }
+    }
+}
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw AuthError.invalidResponse
-        }
-
-        switch httpResponse.statusCode {
-        case 200..<300:
-            return data
-        case 401, 403:
-            throw AuthError.invalidCredentials
-        default:
-            throw AuthError.server(statusCode: httpResponse.statusCode)
+private extension AuthError {
+    /// Maps the shared client's errors to the messages the login screen shows.
+    init(_ error: APIError) {
+        switch error {
+        case .unauthorized:
+            // `APIClient` reports both 401 and 403 as `.unauthorized`.
+            self = .invalidCredentials
+        case .network:
+            self = .network
+        case .server(let statusCode):
+            self = .server(statusCode: statusCode)
+        case .notFound, .invalidResponse, .decoding:
+            self = .invalidResponse
         }
     }
 }

@@ -20,7 +20,7 @@ struct LoginView: View {
     /// - Parameter onLoginSuccess: Called once the session is signed in **and** saved in `sessionStore`.
     init(
         authService: any AuthService,
-        sessionStore: any SessionStoring = SessionStore(),
+        sessionStore: any SessionStoring,
         onLoginSuccess: @escaping (AuthSession) -> Void = { _ in }
     ) {
         _viewModel = State(initialValue: LoginViewModel(authService: authService, sessionStore: sessionStore))

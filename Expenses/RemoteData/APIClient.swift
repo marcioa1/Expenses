@@ -63,16 +63,19 @@ enum APIError: LocalizedError, Equatable {
     }
 }
 
-/// Generic HTTP JSON client used by the remote data providers.
+/// The single HTTP JSON client of the app, shared by the auth service and the remote repositories.
 ///
-/// - Resolves paths against `baseURL` (defaults to `AppConfiguration.apiBaseURL`).
-/// - Attaches `Authorization: <tokenType> <accessToken>` from the Keychain session, if any.
+/// - Resolves paths against `baseURL`.
+/// - Attaches `Authorization: <tokenType> <accessToken>` from the stored session, if any.
 /// - Encodes request bodies and decodes responses as JSON.
 /// - Maps transport / HTTP failures to `APIError`.
 ///
+/// It's built once in `ExpensesApp` with the app's `SessionStore`, so the base URL, the token
+/// and the header format are defined in one place.
+///
 /// Usage:
 /// ```swift
-/// let client = APIClient()
+/// let client = APIClient(baseURL: AppConfiguration.apiBaseURL, sessionStore: sessionStore)
 /// let categories: [CategoryDTO] = try await client.get("api/categories")
 /// let created: CategoryDTO = try await client.post("api/categories", body: newCategory)
 /// try await client.delete("api/categories/\(id)")
@@ -88,14 +91,14 @@ struct APIClient {
 
     private let baseURL: URL
     private let session: URLSession
-    private let sessionStore: SessionStore
+    private let sessionStore: any SessionStoring
     private let encoder: JSONEncoder
     private let decoder: JSONDecoder
 
     init(
-        baseURL: URL = AppConfiguration.apiBaseURL,
+        baseURL: URL,
         session: URLSession = .shared,
-        sessionStore: SessionStore = SessionStore()
+        sessionStore: any SessionStoring
     ) {
         self.baseURL = baseURL
         self.session = session
@@ -132,6 +135,15 @@ struct APIClient {
         _ = try await send(makeRequest(.delete, path, query: [], body: Optional<Data>.none))
     }
 
+    /// Sends a body-less `POST` authorized by `authSession` instead of the stored session, ignoring
+    /// the response body. Used to sign out: by then the app has already cleared the stored session.
+    ///
+    /// A `401` here doesn't post `.sessionExpired`, since the user is already logging out.
+    func post(_ path: String, authorizedBy authSession: AuthSession) async throws {
+        let request = try makeRequest(.post, path, query: [], body: Optional<Data>.none, authSession: authSession)
+        _ = try await send(request, reportsSessionExpiry: false)
+    }
+
     // MARK: - Core
 
     /// Sends a request without a body and decodes the JSON response.
@@ -157,11 +169,13 @@ struct APIClient {
 
     // MARK: - Private
 
+    /// - Parameter authSession: Token to send instead of the stored session (see `post(_:authorizedBy:)`).
     private func makeRequest<Body: Encodable>(
         _ method: Method,
         _ path: String,
         query: [URLQueryItem],
-        body: Body?
+        body: Body?,
+        authSession: AuthSession? = nil
     ) throws -> URLRequest {
         var url = baseURL.appending(path: path)
         if !query.isEmpty {
@@ -172,7 +186,7 @@ struct APIClient {
         request.httpMethod = method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
-        if let authSession = sessionStore.load() {
+        if let authSession = authSession ?? sessionStore.load() {
             request.setValue(
                 "\(authSession.tokenType.capitalized) \(authSession.accessToken)",
                 forHTTPHeaderField: "Authorization"
@@ -210,7 +224,8 @@ struct APIClient {
     #endif
 
     /// Performs the request and maps transport / HTTP failures to `APIError`.
-    private func send(_ request: URLRequest) async throws -> Data {
+    /// - Parameter reportsSessionExpiry: Whether a `401` on an authorized request posts `.sessionExpired`.
+    private func send(_ request: URLRequest, reportsSessionExpiry: Bool = true) async throws -> Data {
         let data: Data
         let response: URLResponse
         do {
@@ -235,7 +250,7 @@ struct APIClient {
         case 401:
             // Only a request that carried a token means the session expired;
             // the app listens for this and returns to the login screen.
-            if request.value(forHTTPHeaderField: "Authorization") != nil {
+            if reportsSessionExpiry, request.value(forHTTPHeaderField: "Authorization") != nil {
                 NotificationCenter.default.post(name: .sessionExpired, object: nil)
             }
             throw APIError.unauthorized
