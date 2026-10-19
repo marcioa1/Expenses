@@ -74,4 +74,80 @@ struct CategoriesViewModelTests {
         let roots = vm.rootCategories()
         #expect(roots.count == 2)
     }
+
+    // MARK: - Loading state
+
+    @Test func startsLoading() {
+        #expect(CategoriesViewModel().loadingState == .loading)
+    }
+
+    @Test func configureSucceeds() async {
+        let vm = await makeViewModel(with: [Category(id: 1, name: "Food")])
+        #expect(vm.loadingState == .success)
+    }
+
+    @Test func configureSucceedsWithNoCategories() async {
+        // An empty list is a successful load; the view shows its empty state, not an error.
+        let vm = await makeViewModel()
+        #expect(vm.loadingState == .success)
+    }
+
+    @Test func configureFailsWhenFetchFails() async {
+        let vm = CategoriesViewModel()
+        await vm.configure(with: CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1)))
+        #expect(vm.loadingState == .failed)
+    }
+
+    @Test func configureRecoversOnRetry() async {
+        let vm = CategoriesViewModel()
+        let basket = CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1))
+
+        await vm.configure(with: basket)
+        #expect(vm.loadingState == .failed)
+
+        // E.g. the user comes back to the tab, which runs `configure` again.
+        await vm.configure(with: basket)
+        #expect(vm.loadingState == .success)
+        #expect(!vm.categories.isEmpty)
+    }
+
+    @Test func refreshFailureShowsError() async {
+        let vm = CategoriesViewModel()
+        // First load succeeds, the pull-to-refresh fails.
+        let basket = CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1, succeedFirst: true))
+
+        await vm.configure(with: basket)
+        #expect(vm.loadingState == .success)
+
+        await vm.refresh()
+        #expect(vm.loadingState == .failed)
+    }
+}
+
+private struct LoadError: Error {}
+
+/// Category repository that fails `failures` fetches (optionally after one successful fetch).
+@MainActor
+private final class FlakyCategoryRepository: @MainActor CategoryRepository {
+    private var failuresRemaining: Int
+    private var succeedNext: Bool
+
+    init(failures: Int, succeedFirst: Bool = false) {
+        self.failuresRemaining = failures
+        self.succeedNext = succeedFirst
+    }
+
+    func fetchAll() async throws -> [Category] {
+        if succeedNext {
+            succeedNext = false
+        } else if failuresRemaining > 0 {
+            failuresRemaining -= 1
+            throw LoadError()
+        }
+        return [Category(id: 1, name: "Food")]
+    }
+
+    func create(_ draft: CategoryDraft) async throws -> Category { throw LoadError() }
+    func update(_ category: Category) async throws -> Category { throw LoadError() }
+    func delete(_ category: Category) async throws { throw LoadError() }
 }

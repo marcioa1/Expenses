@@ -21,19 +21,19 @@ struct CategoriesView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                CategoryGridView(
-                    categories: viewModel.rootCategories(),
-                    allCategories: viewModel.categories,
-                    columns: columns,
-                    onEdit: { category in viewModel.categoryToEdit = category }
-                )
+            Group {
+                switch viewModel.loadingState {
+                case .loading:
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                case .failed:
+                    ErrorView()
+                case .success:
+                    categoryGrid
+                }
             }
             .task {
                 await viewModel.configure(with: categoryBasket)
-            }
-            .refreshable {
-                await viewModel.refresh()
             }
             .navigationTitle("Categories")
             .toolbar {
@@ -56,6 +56,29 @@ struct CategoriesView: View {
             }
             .sheet(item: $viewModel.categoryToEdit) { category in
                 CategoryFormView(category: category)
+            }
+        }
+    }
+
+    private var categoryGrid: some View {
+        ScrollView {
+            CategoryGridView(
+                categories: viewModel.rootCategories(),
+                allCategories: viewModel.categories,
+                columns: columns,
+                onEdit: { category in viewModel.categoryToEdit = category }
+            )
+        }
+        .refreshable {
+            await viewModel.refresh()
+        }
+        .overlay {
+            if viewModel.categories.isEmpty {
+                ContentUnavailableView(
+                    "No Categories",
+                    systemImage: "square.grid.2x2",
+                    description: Text("Add your first category to organize your expenses.")
+                )
             }
         }
     }
