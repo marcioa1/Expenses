@@ -94,13 +94,13 @@ struct CategoriesViewModelTests {
 
     @Test func configureFailsWhenFetchFails() async {
         let vm = CategoriesViewModel()
-        await vm.configure(with: CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1)))
+        await vm.configure(with: CategoryBasket(categoryRepository: MockCategoryDataProvider(failingFetches: 1)))
         #expect(vm.loadingState == .failed)
     }
 
     @Test func configureRecoversOnRetry() async {
         let vm = CategoriesViewModel()
-        let basket = CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1))
+        let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(failingFetches: 1))
 
         await vm.configure(with: basket)
         #expect(vm.loadingState == .failed)
@@ -113,45 +113,20 @@ struct CategoriesViewModelTests {
 
     @Test func refreshFailureKeepsCategoriesAndShowsMessage() async {
         let vm = CategoriesViewModel()
-        // First load succeeds, the pull-to-refresh fails.
-        let basket = CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1, succeedFirst: true))
+        let repository = MockCategoryDataProvider()
+        let basket = CategoryBasket(categoryRepository: repository)
 
+        // First load succeeds…
         await vm.configure(with: basket)
         #expect(vm.loadingState == .success)
         #expect(vm.errorMessage == nil)
 
+        // …then the pull-to-refresh fails.
+        repository.fetchError = APIError.network
         await vm.refresh()
         // The screen keeps showing the categories it already had and tells the user why they didn't change.
         #expect(vm.loadingState == .success)
         #expect(!vm.categories.isEmpty)
         #expect(vm.errorMessage != nil)
     }
-}
-
-private struct LoadError: Error {}
-
-/// Category repository that fails `failures` fetches (optionally after one successful fetch).
-@MainActor
-private final class FlakyCategoryRepository: @MainActor CategoryRepository {
-    private var failuresRemaining: Int
-    private var succeedNext: Bool
-
-    init(failures: Int, succeedFirst: Bool = false) {
-        self.failuresRemaining = failures
-        self.succeedNext = succeedFirst
-    }
-
-    func fetchAll() async throws -> [Category] {
-        if succeedNext {
-            succeedNext = false
-        } else if failuresRemaining > 0 {
-            failuresRemaining -= 1
-            throw LoadError()
-        }
-        return [Category(id: 1, name: "Food")]
-    }
-
-    func create(_ draft: CategoryDraft) async throws -> Category { throw LoadError() }
-    func update(_ category: Category) async throws -> Category { throw LoadError() }
-    func delete(_ category: Category) async throws { throw LoadError() }
 }

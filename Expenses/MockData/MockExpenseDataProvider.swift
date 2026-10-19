@@ -13,27 +13,37 @@ final class MockExpenseDataProvider: @MainActor ExpenseRepository {
     typealias Item = Expense
 
     private var expenses: [Expense]
-    /// When set, `fetchAll` throws this error instead of returning expenses (e.g. to preview the error screen).
+    /// When set, every fetch throws this error (e.g. to preview the error screen). It can be changed
+    /// between calls, e.g. set after a first successful load to simulate a failed refresh.
     var fetchError: Error?
+    /// The next `failingFetches` fetches throw `MockRepositoryError.fetchFailed`, then fetches succeed
+    /// again: a failed first load followed by a successful retry.
+    var failingFetches: Int
+    /// When set, `create`, `update` and `delete` throw this error (e.g. a network error on save).
+    var writeError: Error?
 
-    init(expenses: [Expense] = [], fetchError: Error? = nil) {
+    init(expenses: [Expense] = [], fetchError: Error? = nil, failingFetches: Int = 0, writeError: Error? = nil) {
         self.expenses = expenses
         self.fetchError = fetchError
+        self.failingFetches = failingFetches
+        self.writeError = writeError
     }
 
     func fetchAll() async throws -> [Expense] {
-        if let fetchError { throw fetchError }
+        try failFetchIfNeeded()
         return expenses.sorted { $0.datetime > $1.datetime }
     }
 
     func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] {
-        expenses
+        try failFetchIfNeeded()
+        return expenses
             .filter { $0.datetime >= startDate && $0.datetime <= endDate }
             .sorted { $0.datetime > $1.datetime }
     }
 
     /// Mimics the server by assigning the next available `id`.
     func create(_ draft: ExpenseDraft) async throws -> Expense {
+        if let writeError { throw writeError }
         let nextID = (expenses.map(\.id).max() ?? 0) + 1
         let expense = Expense(
             id: nextID,
@@ -51,6 +61,7 @@ final class MockExpenseDataProvider: @MainActor ExpenseRepository {
     }
 
     func update(_ expense: Expense) async throws -> Expense {
+        if let writeError { throw writeError }
         if let index = expenses.firstIndex(where: { $0.id == expense.id }) {
             expenses[index] = expense
         }
@@ -58,7 +69,16 @@ final class MockExpenseDataProvider: @MainActor ExpenseRepository {
     }
 
     func delete(_ expense: Expense) async throws {
+        if let writeError { throw writeError }
         expenses.removeAll { $0.id == expense.id }
+    }
+
+    private func failFetchIfNeeded() throws {
+        if failingFetches > 0 {
+            failingFetches -= 1
+            throw MockRepositoryError.fetchFailed
+        }
+        if let fetchError { throw fetchError }
     }
 }
 #endif

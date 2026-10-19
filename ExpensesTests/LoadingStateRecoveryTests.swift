@@ -9,65 +9,6 @@ import Testing
 import Foundation
 @testable import Expenses
 
-/// Disambiguates from the Objective-C runtime `Category` type exposed by Foundation.
-private typealias Category = Expenses.Category
-
-private struct LoadError: Error {}
-
-/// Category repository whose first `fetchAll()` fails and later ones succeed.
-@MainActor
-private final class FlakyCategoryRepository: @MainActor CategoryRepository {
-    private var failuresRemaining: Int
-    private let categories: [Category]
-
-    init(failures: Int = 1, categories: [Category] = [Category(id: 1, name: "Food")]) {
-        self.failuresRemaining = failures
-        self.categories = categories
-    }
-
-    func fetchAll() async throws -> [Category] {
-        if failuresRemaining > 0 {
-            failuresRemaining -= 1
-            throw LoadError()
-        }
-        return categories
-    }
-
-    func create(_ draft: CategoryDraft) async throws -> Category { throw LoadError() }
-    func update(_ category: Category) async throws -> Category { throw LoadError() }
-    func delete(_ category: Category) async throws { throw LoadError() }
-}
-
-/// Expense repository whose first `failures` fetches fail and later ones succeed.
-/// With `succeedFirst`, one successful fetch comes before the failures (a load, then a failed refresh).
-@MainActor
-private final class FlakyExpenseRepository: @MainActor ExpenseRepository {
-    private var failuresRemaining: Int
-    private var succeedNext: Bool
-    private let expenses: [Expense]
-
-    init(failures: Int = 1, succeedFirst: Bool = false, expenses: [Expense] = []) {
-        self.failuresRemaining = failures
-        self.succeedNext = succeedFirst
-        self.expenses = expenses
-    }
-
-    func fetchAll() async throws -> [Expense] {
-        if succeedNext {
-            succeedNext = false
-        } else if failuresRemaining > 0 {
-            failuresRemaining -= 1
-            throw LoadError()
-        }
-        return expenses
-    }
-
-    func fetch(from startDate: Date, to endDate: Date) async throws -> [Expense] { try await fetchAll() }
-    func create(_ draft: ExpenseDraft) async throws -> Expense { throw LoadError() }
-    func update(_ expense: Expense) async throws -> Expense { throw LoadError() }
-    func delete(_ expense: Expense) async throws { throw LoadError() }
-}
-
 @MainActor
 struct LoadingStateRecoveryTests {
 
@@ -75,7 +16,7 @@ struct LoadingStateRecoveryTests {
 
     @Test func expensesListRecoversWhenConfigureIsRetried() async {
         let vm = ExpensesListViewModel()
-        let categoryBasket = CategoryBasket(categoryRepository: FlakyCategoryRepository())
+        let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider(failingFetches: 1))
         let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider())
 
         await vm.configure(with: categoryBasket, expenseBasket: expenseBasket)
@@ -87,7 +28,7 @@ struct LoadingStateRecoveryTests {
 
     @Test func expensesListRefreshRetriesFailedCategories() async {
         let vm = ExpensesListViewModel()
-        let categoryBasket = CategoryBasket(categoryRepository: FlakyCategoryRepository())
+        let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider(failingFetches: 1))
         let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider())
 
         await vm.configure(with: categoryBasket, expenseBasket: expenseBasket)
@@ -102,7 +43,7 @@ struct LoadingStateRecoveryTests {
         let vm = ExpensesListViewModel()
         let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider())
         // Fails both the initial load and the refresh.
-        let expenseBasket = ExpenseBasket(expenseRepository: FlakyExpenseRepository(failures: 2))
+        let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(failingFetches: 2))
 
         await vm.configure(with: categoryBasket, expenseBasket: expenseBasket)
         await vm.refreshExpenses()
@@ -113,15 +54,15 @@ struct LoadingStateRecoveryTests {
         let vm = ExpensesListViewModel()
         let lunch = Expense(id: 1, categoryID: 1, value: 10)
         let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider())
-        let expenseBasket = ExpenseBasket(
-            expenseRepository: FlakyExpenseRepository(failures: 1, succeedFirst: true, expenses: [lunch])
-        )
+        let expenseRepository = MockExpenseDataProvider(expenses: [lunch])
+        let expenseBasket = ExpenseBasket(expenseRepository: expenseRepository)
 
         await vm.configure(with: categoryBasket, expenseBasket: expenseBasket)
         #expect(vm.loadingState == .success)
         #expect(vm.errorMessage == nil)
 
         // Pull-to-refresh fails: the list keeps what it had and tells the user it couldn't refresh.
+        expenseRepository.fetchError = APIError.network
         await vm.refreshExpenses()
         #expect(vm.loadingState == .success)
         #expect(vm.expenses.map(\.id) == [1])
@@ -133,7 +74,7 @@ struct LoadingStateRecoveryTests {
     @Test func recoveryOnOneTabClearsTheErrorOnAnother() async {
         // Two tabs sharing the same baskets, as in the app.
         let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider())
-        let expenseBasket = ExpenseBasket(expenseRepository: FlakyExpenseRepository(failures: 1))
+        let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(failingFetches: 1))
         let list = ExpensesListViewModel()
         let summary = SummaryViewModel()
 
@@ -150,7 +91,7 @@ struct LoadingStateRecoveryTests {
     @Test func failureIsTheSameOnEveryTab() async {
         let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider())
         // Fails the list's load and the chart's retry.
-        let expenseBasket = ExpenseBasket(expenseRepository: FlakyExpenseRepository(failures: 2))
+        let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(failingFetches: 2))
         let list = ExpensesListViewModel()
         let chart = DailyChartViewModel()
 
@@ -166,7 +107,7 @@ struct LoadingStateRecoveryTests {
     @Test func monthlyGridRecoversWhenConfigureIsRetried() async {
         let vm = MonthlyGridViewModel()
         let categoryBasket = CategoryBasket(categoryRepository: MockCategoryDataProvider())
-        let expenseBasket = ExpenseBasket(expenseRepository: FlakyExpenseRepository())
+        let expenseBasket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(failingFetches: 1))
 
         await vm.configure(with: categoryBasket, expenseBasket: expenseBasket)
         #expect(vm.loadingState == .failed)
@@ -180,7 +121,7 @@ struct LoadingStateRecoveryTests {
         #expect(vm.loadingState == .loading)
 
         await vm.configure(
-            with: CategoryBasket(categoryRepository: FlakyCategoryRepository(failures: 1)),
+            with: CategoryBasket(categoryRepository: MockCategoryDataProvider(failingFetches: 1)),
             expenseBasket: ExpenseBasket(expenseRepository: MockExpenseDataProvider())
         )
 
