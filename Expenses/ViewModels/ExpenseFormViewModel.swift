@@ -50,7 +50,7 @@ class ExpenseFormViewModel {
         }
     }
 
-    func configure(with categoryBasket: CategoryBasket) async {
+    private func configure(with categoryBasket: CategoryBasket) async {
         self.categoryBasket = categoryBasket
         try? await categoryBasket.loadIfNeeded()
         if let expense {
