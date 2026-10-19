@@ -28,7 +28,7 @@ extension JSONDecoder.DateDecodingStrategy {
 
 extension Date {
     /// Parses an ISO 8601 date; a value without a timezone is treated as UTC.
-    static func parseISO8601(_ string: String) -> Date? {
+    nonisolated static func parseISO8601(_ string: String) -> Date? {
         let style = Date.ISO8601FormatStyle()
         return (try? style.parse(string)) ?? (try? style.parse(string + "Z"))
     }
