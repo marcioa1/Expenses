@@ -88,22 +88,6 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    func findAllNearbyPOIs(near location: CLLocation) async throws -> [PointOfInterest] {
-        let request = MKLocalPointsOfInterestRequest(
-            center: location.coordinate,
-            radius: 1000
-        )
-        let search = MKLocalSearch(request: request)
-        let response = try await search.start()
-        return response.mapItems.map { item in
-            PointOfInterest(
-                name: item.name ?? "Unknown",
-                coordinate: item.placemark.coordinate,
-                category: item.pointOfInterestCategory?.rawValue
-            )
-        }
-    }
-
     func getPOI() async -> PointOfInterest? {
         guard let location = await waitForLocation() else { return nil }
         let request = MKLocalPointsOfInterestRequest(
