@@ -99,3 +99,61 @@ extension Array where Element == Category {
         Set([category.id] + subcategories(of: category).map(\.id))
     }
 }
+
+// MARK: - Two-level rule
+
+/// Categories go at most two levels deep: a root and its direct subcategories. The category grid
+/// and the filters (`ids(matching:)`) are built for exactly that, and the rule also makes cycles
+/// (a category under its own descendant, which hides both from the grid) impossible.
+extension Array where Element == Category {
+    /// Whether `category` may be placed under another one: a category that has subcategories must
+    /// stay a root, or its children would become a third level. A new category (`nil`) always can.
+    func canHaveParent(_ category: Category?) -> Bool {
+        guard let category else { return true }
+        return subcategories(of: category).isEmpty
+    }
+
+    /// The categories `category` (`nil` for a new one) may be placed under: root categories other
+    /// than itself, or none if it has subcategories.
+    ///
+    /// Data created before the rule may already have a non-root parent; it's kept in the list so
+    /// a form editing that category still shows its current selection.
+    func allowedParents(for category: Category?) -> [Category] {
+        var parents = canHaveParent(category)
+            ? filter { $0.parentID == nil && $0.id != category?.id }
+            : []
+        if let currentParent = self.category(withID: category?.parentID), !parents.contains(currentParent) {
+            parents.append(currentParent)
+        }
+        return parents
+    }
+
+    /// Checks that giving `parentID` to the category with `categoryID` (`nil` when creating one)
+    /// keeps the two-level rule. Keeping a category's current parent is always allowed, so
+    /// pre-existing deeper data can still be edited.
+    func validateParent(_ parentID: Int?, forCategoryWithID categoryID: Int?) throws {
+        guard let parentID else { return }   // Becoming (or staying) a root is always fine.
+        let existing = self.category(withID: categoryID)
+        if let existing, existing.parentID == parentID { return }
+
+        guard let parent = self.category(withID: parentID),
+              parent.parentID == nil,
+              parent.id != categoryID,
+              canHaveParent(existing)
+        else {
+            throw CategoryHierarchyError.invalidParent
+        }
+    }
+}
+
+enum CategoryHierarchyError: LocalizedError, Equatable {
+    /// The parent would create a third level or a cycle (see `validateParent`).
+    case invalidParent
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidParent:
+            String(localized: "A category can only be placed under a main category, and only if it has no subcategories itself.")
+        }
+    }
+}

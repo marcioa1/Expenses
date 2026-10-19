@@ -29,26 +29,14 @@ class CategoryFormViewModel {
 
     var isEditing: Bool { category != nil }
 
-    /// Categories go at most two levels deep (a root and its direct subcategories), which is
-    /// what the category grid and the filters (`ids(matching:)`) are built for.
-    /// A category that has subcategories must stay a root, or its children would become a third level.
+    /// Whether this category may be placed under another one (two-level rule, see `Category.swift`).
     var canHaveParent: Bool {
-        subcategories.isEmpty
+        categories.canHaveParent(category)
     }
 
-    /// Root categories other than this one. Only roots can be parents, so a category can never
-    /// be moved under one of its own descendants (which would hide both from the grid).
+    /// The parents the picker offers; `CategoryBasket` enforces the same rule when saving.
     var availableParents: [Category] {
-        var parents = canHaveParent
-            ? categories.filter { $0.parentID == nil && $0.id != category?.id }
-            : []
-        // Data created before the two-level rule may have a non-root parent; keep it listed
-        // while editing so the picker's current selection stays valid.
-        if let originalParent = categories.category(withID: category?.parentID),
-           !parents.contains(originalParent) {
-            parents.append(originalParent)
-        }
-        return parents
+        categories.allowedParents(for: category)
     }
 
     var subcategories: [Category] {

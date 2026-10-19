@@ -81,14 +81,20 @@ final class CategoryBasket {
 
     // MARK: - Writes
 
+    /// - Throws: `CategoryHierarchyError.invalidParent` (without contacting the server) if the
+    ///   parent would break the two-level rule.
     func create(_ draft: CategoryDraft) async throws {
+        try categories.validateParent(draft.parentID, forCategoryWithID: nil)
         guard let categoryRepository else { return }
         let created = try await categoryRepository.create(draft)
         categories.append(created)
         sortCategories()
     }
 
+    /// - Throws: `CategoryHierarchyError.invalidParent` (without contacting the server) if the
+    ///   new parent would break the two-level rule.
     func update(_ category: Category) async throws {
+        try categories.validateParent(category.parentID, forCategoryWithID: category.id)
         guard let categoryRepository else { return }
         let updated = try await categoryRepository.update(category)
         if let index = categories.firstIndex(where: { $0.id == updated.id }) {

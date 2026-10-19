@@ -83,6 +83,81 @@ struct CategoryBasketTests {
         #expect(basket.categories.isEmpty)
     }
 
+    // MARK: - Two-level rule (enforced by the basket, whatever screen calls it)
+
+    /// Food → Restaurants; Transport (no children).
+    private func makeHierarchy() -> (basket: CategoryBasket, food: Category, restaurants: Category, transport: Category) {
+        let food = Category(id: 1, name: "Food")
+        let restaurants = Category(id: 2, name: "Restaurants", parentID: food.id)
+        let transport = Category(id: 3, name: "Transport")
+        let all = [food, restaurants, transport]
+        let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider(categories: all), categories: all)
+        return (basket, food, restaurants, transport)
+    }
+
+    @Test func updateRejectsCycle() async {
+        let (basket, food, restaurants, _) = makeHierarchy()
+        var cycle = food
+        cycle.parentID = restaurants.id   // Food under its own subcategory.
+
+        await #expect(throws: CategoryHierarchyError.invalidParent) { try await basket.update(cycle) }
+        // Nothing changed locally.
+        #expect(basket.category(withID: food.id)?.parentID == nil)
+    }
+
+    @Test func updateRejectsMovingAParentUnderAnotherCategory() async {
+        let (basket, food, _, transport) = makeHierarchy()
+        var moved = food
+        moved.parentID = transport.id   // Its subcategory Restaurants would become a 3rd level.
+
+        await #expect(throws: CategoryHierarchyError.invalidParent) { try await basket.update(moved) }
+    }
+
+    @Test func createRejectsSubcategoryAsParent() async {
+        let (basket, _, restaurants, _) = makeHierarchy()
+
+        await #expect(throws: CategoryHierarchyError.invalidParent) {
+            try await basket.create(CategoryDraft(name: "Sushi", parentID: restaurants.id))
+        }
+        #expect(!basket.categories.contains { $0.name == "Sushi" })
+    }
+
+    @Test func createRejectsUnknownParent() async {
+        let (basket, _, _, _) = makeHierarchy()
+
+        await #expect(throws: CategoryHierarchyError.invalidParent) {
+            try await basket.create(CategoryDraft(name: "Orphan", parentID: 999))
+        }
+    }
+
+    @Test func validHierarchyChangesAreSaved() async throws {
+        let (basket, _, restaurants, transport) = makeHierarchy()
+
+        var moved = restaurants
+        moved.parentID = transport.id   // A subcategory moving to another root.
+        try await basket.update(moved)
+        try await basket.create(CategoryDraft(name: "Taxi", parentID: transport.id))
+
+        #expect(basket.category(withID: restaurants.id)?.parentID == transport.id)
+        #expect(basket.categories.contains { $0.name == "Taxi" && $0.parentID == transport.id })
+    }
+
+    @Test func legacyThirdLevelCategoryCanStillBeEdited() async throws {
+        // Created before the rule: Food → Restaurants → Sushi.
+        let (basket, _, restaurants, _) = makeHierarchy()
+        let sushi = Category(id: 4, name: "Sushi", parentID: restaurants.id)
+        let legacyBasket = CategoryBasket(
+            categoryRepository: MockCategoryDataProvider(categories: basket.categories + [sushi]),
+            categories: basket.categories + [sushi]
+        )
+
+        var renamed = sushi
+        renamed.name = "Japanese"   // Same (non-root) parent: allowed.
+        try await legacyBasket.update(renamed)
+
+        #expect(legacyBasket.category(withID: sushi.id)?.name == "Japanese")
+    }
+
     @Test func rootCategoryWalksUpToTopLevel() {
         let food = Category(id: 1, name: "Food")
         let restaurants = Category(id: 3, name: "Restaurants", parentID: food.id)
