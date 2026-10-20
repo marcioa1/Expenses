@@ -11,11 +11,20 @@ import Foundation
 class MonthFilter {
     var selectedMonthIndex: Int = 3
 
-    let monthOffsets = Array(-3...3)
+    /// The months offered, relative to the current one: three before and three after.
+    private let monthOffsets = Array(-3...3)
+
+    /// One label per offered month, e.g. "Outubro", in the same order as `selectedMonthIndex`.
+    var monthLabels: [String] {
+        monthOffsets.map { month(at: $0).formatted(.dateTime.month(.wide)).capitalized }
+    }
 
     func selectedMonth() -> Date {
-        let calendar = Calendar.current
-        return calendar.date(byAdding: .month, value: monthOffsets[selectedMonthIndex], to: .now) ?? .now
+        month(at: monthOffsets[selectedMonthIndex])
+    }
+
+    private func month(at offset: Int) -> Date {
+        Calendar.current.date(byAdding: .month, value: offset, to: .now) ?? .now
     }
 
     private func monthStart() -> Date {

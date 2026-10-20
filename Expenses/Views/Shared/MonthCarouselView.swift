@@ -8,22 +8,17 @@
 import SwiftUI
 
 struct MonthCarouselView: View {
-    let monthOffsets: [Int]
+    /// Month names to show, from `MonthFilter`; the position of each one is its index.
+    let labels: [String]
     @Binding var selectedMonthIndex: Int
-
-    private func monthLabel(for offset: Int) -> String {
-        let calendar = Calendar.current
-        let date = calendar.date(byAdding: .month, value: offset, to: .now) ?? .now
-        return date.formatted(.dateTime.month(.wide)).capitalized
-    }
 
     var body: some View {
         Section {
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 24) {
-                        ForEach(Array(monthOffsets.enumerated()), id: \.offset) { index, offset in
-                            Text(monthLabel(for: offset))
+                        ForEach(Array(labels.enumerated()), id: \.offset) { index, label in
+                            Text(label)
                                 .font(index == selectedMonthIndex ? .title3.bold() : .caption)
                                 .foregroundStyle(index == selectedMonthIndex ? .orange : .secondary)
                                 .id(index)

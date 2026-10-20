@@ -24,7 +24,7 @@ struct SummaryView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 MonthCarouselView(
-                    monthOffsets: viewModel.monthOffsets,
+                    labels: viewModel.monthLabels,
                     selectedMonthIndex: $viewModel.selectedMonthIndex
                 )
                 switch viewModel.loadingState {

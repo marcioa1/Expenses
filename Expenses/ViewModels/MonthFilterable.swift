@@ -12,7 +12,7 @@ protocol MonthFilterable: AnyObject {
 }
 
 extension MonthFilterable {
-    var monthOffsets: [Int] { monthFilter.monthOffsets }
+    var monthLabels: [String] { monthFilter.monthLabels }
 
     /// The month chosen in `MonthCarouselView`. Months are filtered in memory from the shared
     /// basket, so changing month needs no fetch.
