@@ -32,7 +32,7 @@ final class ExpensesListViewModel: MonthFilterable {
     }
     /// Expenses of the selected month, newest first.
     var expenses: [Expense] {
-        expenseBasket?.expenses(from: monthFilter.monthStart(), to: monthFilter.monthEnd()) ?? []
+        monthFilter.filteredExpenses(from: expenseBasket?.expenses ?? [])
     }
 
     /// Whether the user has any expense at all, in any month. Lets the empty state tell

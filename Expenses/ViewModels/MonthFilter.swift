@@ -18,24 +18,21 @@ class MonthFilter {
         return calendar.date(byAdding: .month, value: monthOffsets[selectedMonthIndex], to: .now) ?? .now
     }
 
-    func monthStart() -> Date {
+    private func monthStart() -> Date {
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month], from: selectedMonth())
         return calendar.date(from: components) ?? selectedMonth()
     }
 
-    func monthEnd() -> Date {
+    private func monthEnd() -> Date {
         let calendar = Calendar.current
         return calendar.date(byAdding: DateComponents(month: 1, second: -1), to: monthStart()) ?? selectedMonth()
     }
 
+    /// The expenses of the selected month. The single month filter used by every tab.
     func filteredExpenses(from allExpenses: [Expense]) -> [Expense] {
         let start = monthStart()
         let end = monthEnd()
         return allExpenses.filter { $0.datetime >= start && $0.datetime <= end }
-    }
-
-    func totalAmount(from allExpenses: [Expense]) -> Decimal {
-        filteredExpenses(from: allExpenses).reduce(0) { $0 + $1.value }
     }
 }

@@ -25,7 +25,7 @@ final class SummaryViewModel: MonthFilterable {
     }
     
     var totalAmount: Decimal {
-        monthFilter.totalAmount(from: filteredExpenses)
+        filteredExpenses.reduce(0) { $0 + $1.value }
     }
 
     var filteredExpenses: [Expense] {
@@ -49,10 +49,9 @@ final class SummaryViewModel: MonthFilterable {
 
     func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Decimal)], total: Decimal)] {
         guard let categoryBasket else { return [] }
-        let filtered = monthFilter.filteredExpenses(from: self.expenses)
         var parentMap: [Int: (parent: Category, children: [Int: Decimal])] = [:]
 
-        for expense in filtered {
+        for expense in filteredExpenses {
             // Expenses whose category is not (or no longer) on the server are left out of the breakdown.
             guard let category = categoryBasket.category(withID: expense.categoryID) else { continue }
             let root = categoryBasket.rootCategory(of: category)
