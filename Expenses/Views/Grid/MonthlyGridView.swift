@@ -48,20 +48,20 @@ struct MonthlyGridView: View {
     }
 
     private var gridContent: some View {
-        // Only computed when the grid is actually drawn, not while loading or after a failure.
-        let maxTotal = viewModel.maxTotal
+        // Computed once per render, and only when the grid is actually drawn.
+        let grid = viewModel.grid
         return ScrollView {
             Grid(alignment: .trailing, horizontalSpacing: 6, verticalSpacing: 0) {
-                headerRow
-                ForEach(1...viewModel.maxDays, id: \.self) { day in
+                headerRow(grid)
+                ForEach(1...grid.maxDays, id: \.self) { day in
                     Divider()
                     GridRow {
                         Text(String(format: "%02d", day))
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .gridColumnAlignment(.leading)
-                        ForEach(viewModel.months, id: \.self) { month in
-                            cell(day: day, month: month, maxTotal: maxTotal)
+                        ForEach(grid.columns) { column in
+                            cell(day: day, column: column, grid: grid)
                         }
                     }
                     .frame(height: 40)
@@ -71,14 +71,14 @@ struct MonthlyGridView: View {
         }
     }
 
-    private var headerRow: some View {
+    private func headerRow(_ grid: MonthlyGrid) -> some View {
         GridRow {
             Text("Day")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .gridColumnAlignment(.leading)
-            ForEach(viewModel.months, id: \.self) { month in
-                Text(viewModel.monthLabel(month))
+            ForEach(grid.columns) { column in
+                Text(column.label)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
@@ -88,14 +88,14 @@ struct MonthlyGridView: View {
     }
 
     @ViewBuilder
-    private func cell(day: Int, month: Date, maxTotal: Decimal) -> some View {
-        if day > viewModel.daysInMonth(month) {
+    private func cell(day: Int, column: MonthColumn, grid: MonthlyGrid) -> some View {
+        if day > column.dayCount {
+            // Shorter months leave the last rows empty.
             Color.clear
                 .frame(maxWidth: .infinity, minHeight: 36)
         } else {
-            let amount = viewModel.accumulated(through: day, in: month, from: viewModel.filteredExpenses)
-            // A 0...1 ratio used only for the cell's opacity, so `Double` precision is fine here.
-            let intensity = amount.map { Double(truncating: ($0 / maxTotal) as NSDecimalNumber) } ?? 0
+            let amount = column.runningTotals[day - 1]
+            let intensity = amount.map(grid.intensity(of:)) ?? 0
 
             ZStack {
                 RoundedRectangle(cornerRadius: 6)
