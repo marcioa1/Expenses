@@ -32,7 +32,8 @@ struct ExpenseRemoteDataProvider: ExpenseRepository {
 
     func fetchAll() async throws -> [Expense] {
         let response: ExpensesBody = try await client.get(Endpoint.expenses)
-        return response.expenses.sorted { $0.datetime > $1.datetime }
+        // In server order; `ExpenseBasket` sorts them.
+        return response.expenses
     }
 
     func create(_ draft: ExpenseDraft) async throws -> Expense {

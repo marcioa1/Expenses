@@ -26,6 +26,19 @@ struct ExpenseBasketTests {
         #expect(basket.expenses.map(\.id) == [1])
     }
 
+    @Test func expensesAreKeptNewestFirst() async throws {
+        let older = Expense(id: 1, categoryID: 1, value: 10, datetime: .now.addingTimeInterval(-7200))
+        let newer = Expense(id: 2, categoryID: 1, value: 20, datetime: .now.addingTimeInterval(-3600))
+        // The repository returns them oldest first; the basket is the only place that sorts.
+        let basket = ExpenseBasket(expenseRepository: MockExpenseDataProvider(expenses: [older, newer]))
+
+        try await basket.loadIfNeeded()
+        #expect(basket.expenses.map(\.id) == [2, 1])
+
+        try await basket.create(ExpenseDraft(categoryID: 1, value: 5, datetime: .now))
+        #expect(basket.expenses.map(\.id) == [3, 2, 1])
+    }
+
     @Test func categoryBasketResetClearsCategories() async throws {
         let basket = CategoryBasket(categoryRepository: MockCategoryDataProvider())
         try await basket.loadIfNeeded()

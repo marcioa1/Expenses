@@ -30,7 +30,8 @@ final class MockExpenseDataProvider: @MainActor ExpenseRepository {
 
     func fetchAll() async throws -> [Expense] {
         try failFetchIfNeeded()
-        return expenses.sorted { $0.datetime > $1.datetime }
+        // In insertion order, like an unsorted server response; `ExpenseBasket` sorts them.
+        return expenses
     }
 
     /// Mimics the server by assigning the next available `id`.
