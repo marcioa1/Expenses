@@ -22,8 +22,7 @@ final class MonthlyGridViewModel {
         guard let expenseBasket, let range = displayedRange else { return [] }
         return expenseBasket.expenses(from: range.start, to: range.end)
     }
-    var selectedCategory: Category?
-    var selectedExtra: ExtraOption = .all
+    var filter = ExpenseFilter()
 
     /// Derived from the shared baskets, so every tab agrees on whether the data is available.
     var loadingState: LoadingState {
@@ -32,20 +31,7 @@ final class MonthlyGridViewModel {
     }
 
     var filteredExpenses: [Expense] {
-        var result = expenses
-        if let selectedCategory {
-            let ids = categories.ids(matching: selectedCategory)
-            result = self.expenses.filter { ids.contains($0.categoryID) }
-        }
-        switch selectedExtra {
-        case .all:
-            break
-        case .extra:
-            result = result.filter { $0.extraordinary }
-        case .regular:
-            result = result.filter { !$0.extraordinary}
-        }
-        return result
+        filter.apply(to: expenses, categories: categories)
     }
     
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {

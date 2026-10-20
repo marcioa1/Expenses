@@ -10,8 +10,7 @@ import SwiftUI
 struct FilterView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var selectedSort: SortOption?
-    @Binding var selectedExtra: ExtraOption
-    @Binding var selectedCategory: Category?
+    @Binding var filter: ExpenseFilter
     let categories: [Category]
     private var hasSort: Bool {
         selectedSort != nil
@@ -40,10 +39,10 @@ struct FilterView: View {
             .padding(.bottom, 4)
 
             CategoryPickerView(
-                selectedCategory: $selectedCategory,
+                selectedCategory: $filter.category,
                 categories: categories
             )
-            ExtraFilterView(selectedExtra: $selectedExtra)
+            ExtraFilterView(selectedExtra: $filter.extra)
                 .padding(.vertical, 16)
             if hasSort {
                 SortPickerView(selectedSort: sortBinding)
@@ -54,10 +53,26 @@ struct FilterView: View {
     }
 }
 
+extension View {
+    /// Presents `FilterView` as a short bottom sheet.
+    /// - Parameter selectedSort: Pass a binding to show the sort picker; leave it `nil` to hide it.
+    func filterSheet(
+        isPresented: Binding<Bool>,
+        filter: Binding<ExpenseFilter>,
+        selectedSort: Binding<SortOption?> = .constant(nil),
+        categories: [Category]
+    ) -> some View {
+        sheet(isPresented: isPresented) {
+            FilterView(selectedSort: selectedSort, filter: filter, categories: categories)
+                .presentationDetents([.height(280)])
+                .presentationDragIndicator(.visible)
+        }
+    }
+}
+
 #Preview("With Sort") {
     @Previewable @State var selectedSort: SortOption? = .date
-    @Previewable @State var selectedExtra: ExtraOption = .all
-    @Previewable @State var selectedCategory: Category? = nil
+    @Previewable @State var filter = ExpenseFilter()
     
     let categories = [
         Category(id: 1, name: "Food", icon: "fork.knife"),
@@ -67,16 +82,13 @@ struct FilterView: View {
     
     FilterView(
         selectedSort: $selectedSort,
-        selectedExtra: $selectedExtra,
-        selectedCategory: $selectedCategory,
+        filter: $filter,
         categories: categories
     )
 }
 
 #Preview("No Sort") {
-    @Previewable @State var selectedSort: SortOption? = nil
-    @Previewable @State var selectedExtra: ExtraOption = .all
-    @Previewable @State var selectedCategory: Category? = nil
+    @Previewable @State var filter = ExpenseFilter()
 
     let categories = [
         Category(id: 1, name: "Food", icon: "fork.knife"),
@@ -85,9 +97,8 @@ struct FilterView: View {
     ]
 
     FilterView(
-        selectedSort: $selectedSort,
-        selectedExtra: $selectedExtra,
-        selectedCategory: $selectedCategory,
+        selectedSort: .constant(nil),
+        filter: $filter,
         categories: categories
     )
 }

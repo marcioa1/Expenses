@@ -45,11 +45,7 @@ struct SummaryView: View {
                     )
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
-                        onLogout()
-                    }
-                }
+                LogoutToolbarItem(onLogout: onLogout)
             }
             .sheet(item: $viewModel.expenseToEdit) { expense in
                 ExpenseFormView(expense: expense)

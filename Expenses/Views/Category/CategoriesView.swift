@@ -37,11 +37,7 @@ struct CategoriesView: View {
             }
             .navigationTitle("Categories")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
-                        onLogout()
-                    }
-                }
+                LogoutToolbarItem(onLogout: onLogout)
 
                 ToolbarItem(placement: .primaryAction) {
                     Button {

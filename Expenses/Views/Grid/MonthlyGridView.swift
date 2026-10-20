@@ -12,16 +12,10 @@ struct MonthlyGridView: View {
     @Environment(ExpenseBasket.self) private var expenseBasket
     @State private var viewModel = MonthlyGridViewModel()
     @State private var showingFilter = false
-    @State private var selectedSort: SortOption? = nil
 
     /// Called when the user taps the logout button.
     var onLogout: () -> Void = {}
 
-    private var hasActiveFilters: Bool {
-        viewModel.selectedCategory != nil ||
-        viewModel.selectedExtra != .all
-    }
-    
     var body: some View {
         NavigationStack {
             Group {
@@ -37,32 +31,16 @@ struct MonthlyGridView: View {
             }
             .navigationTitle("Monthly Overview")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingFilter = true
-                    } label: {
-                        Image(systemName: hasActiveFilters
-                              ? "line.3.horizontal.decrease.circle.fill"
-                              : "line.3.horizontal.decrease.circle")
-                    }
+                FilterToolbarItem(isActive: viewModel.filter.isActive) {
+                    showingFilter = true
                 }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
-                        onLogout()
-                    }
-                }
+                LogoutToolbarItem(onLogout: onLogout)
             }
-            .sheet(isPresented: $showingFilter) {
-                FilterView(
-                    selectedSort: $selectedSort,
-                    selectedExtra: $viewModel.selectedExtra,
-                    selectedCategory: $viewModel.selectedCategory,
-                    categories: viewModel.categories
-                )
-                .presentationDetents([.height(280)])
-                .presentationDragIndicator(.visible)
-            }
+            .filterSheet(
+                isPresented: $showingFilter,
+                filter: $viewModel.filter,
+                categories: viewModel.categories
+            )
         }
         .task {
             await viewModel.configure(with: categoryBasket, expenseBasket: expenseBasket)

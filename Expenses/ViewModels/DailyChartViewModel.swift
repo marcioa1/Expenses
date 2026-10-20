@@ -24,8 +24,7 @@ struct DailyTotal: Identifiable {
 @Observable
 final class DailyChartViewModel: MonthFilterable {
     let monthFilter = MonthFilter()
-    var selectedCategory: Category?
-    var selectedExtra: ExtraOption = .all
+    var filter = ExpenseFilter()
     private var categoryBasket: CategoryBasket?
     var categories: [Category] {
         categoryBasket?.categories ?? []
@@ -61,22 +60,10 @@ final class DailyChartViewModel: MonthFilterable {
     }
 
     func expensesByDay(from allExpenses: [Expense]) -> [DailyTotal] {
-        let filtered = monthFilter.filteredExpenses(from: allExpenses)
+        let monthExpenses = monthFilter.filteredExpenses(from: allExpenses)
+        let result = filter.apply(to: monthExpenses, categories: categories)
         let calendar = Calendar.current
 
-        var result = filtered
-        if let selectedCategory {
-            let ids = categories.ids(matching: selectedCategory)
-            result = result.filter { ids.contains($0.categoryID) }
-        }
-        switch selectedExtra {
-        case .all:
-            break
-        case .extra:
-            result = result.filter { $0.extraordinary }
-        case .regular:
-            result = result.filter { !$0.extraordinary}
-        }
         var dailyMap: [Int: Decimal] = [:]
         for expense in result {
             let day = calendar.component(.day, from: expense.datetime)

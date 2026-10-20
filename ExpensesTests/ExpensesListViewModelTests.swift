@@ -74,7 +74,7 @@ struct ExpensesListViewModelTests {
             ],
             categories: [food, restaurants, transport]
         )
-        vm.selectedCategory = food
+        vm.filter.category = food
 
         #expect(vm.filteredExpenses().map(\.value).sorted() == [10, 20])
     }

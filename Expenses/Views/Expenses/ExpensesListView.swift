@@ -17,12 +17,6 @@ struct ExpensesListView: View {
     /// Called when the user taps the logout button.
     var onLogout: () -> Void = {}
 
-    private var hasActiveFilters: Bool {
-        viewModel.selectedCategory != nil ||
-        viewModel.selectedExtra != .all ||
-        viewModel.selectedSort != .date
-    }
-
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -49,21 +43,10 @@ struct ExpensesListView: View {
                     )
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showingFilter = true
-                    } label: {
-                        Image(systemName: hasActiveFilters
-                              ? "line.3.horizontal.decrease.circle.fill"
-                              : "line.3.horizontal.decrease.circle")
-                    }
+                FilterToolbarItem(isActive: viewModel.hasActiveFilters) {
+                    showingFilter = true
                 }
-
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Logout", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
-                        onLogout()
-                    }
-                }
+                LogoutToolbarItem(onLogout: onLogout)
 
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -73,16 +56,12 @@ struct ExpensesListView: View {
                     }
                 }
             }
-            .sheet(isPresented: $showingFilter) {
-                FilterView(
-                    selectedSort: $viewModel.selectedSort,
-                    selectedExtra: $viewModel.selectedExtra,
-                    selectedCategory: $viewModel.selectedCategory,
-                    categories: viewModel.categories
-                )
-                .presentationDetents([.height(280)])
-                .presentationDragIndicator(.visible)
-            }
+            .filterSheet(
+                isPresented: $showingFilter,
+                filter: $viewModel.filter,
+                selectedSort: $viewModel.selectedSort,
+                categories: viewModel.categories
+            )
             // The form writes through the shared basket, so the list updates without a refresh.
             .sheet(isPresented: $viewModel.showingForm) {
                 ExpenseFormView()

@@ -12,9 +12,8 @@ import Observation
 final class ExpensesListViewModel: MonthFilterable {
     var showingForm = false
     var expenseToEdit: Expense?
-    var selectedCategory: Category?
+    var filter = ExpenseFilter()
     var selectedSort: SortOption? = .date
-    var selectedExtra: ExtraOption = .all
     let monthFilter = MonthFilter()
     /// Message of the last failed write (delete / update) or refresh, shown as an alert by the view.
     var errorMessage: String?
@@ -49,31 +48,21 @@ final class ExpensesListViewModel: MonthFilterable {
         set { monthFilter.selectedMonthIndex = newValue }
     }
     
+    /// Whether the filter button should look active: a filter is set, or the sort isn't the default.
+    var hasActiveFilters: Bool {
+        filter.isActive || selectedSort != .date
+    }
+
     func filteredExpenses() -> [Expense] {
-        var result = expenses
-        if let selectedCategory {
-            let ids = categories.ids(matching: selectedCategory)
-            result = result.filter { ids.contains($0.categoryID) }
-        }
-        
+        let result = filter.apply(to: expenses, categories: categories)
         switch selectedSort {
         case .date:
-            result = result.sorted { $0.datetime > $1.datetime }
+            return result.sorted { $0.datetime > $1.datetime }
         case .value:
-            result = result.sorted { $0.value > $1.value }
+            return result.sorted { $0.value > $1.value }
         case .none:
-            break
+            return result
         }
-        
-        switch selectedExtra {
-        case .all:
-            break
-        case .extra:
-            result = result.filter { $0.extraordinary }
-        case .regular:
-            result = result.filter { !$0.extraordinary}
-        }
-        return result
     }
     
     var totalAmount: Decimal {
