@@ -47,12 +47,6 @@ final class SummaryViewModel: MonthFilterable {
         await baskets.loadIfNeeded()
     }
 
-    /// Months are filtered in memory from the shared basket, so changing month needs no fetch.
-    var selectedMonthIndex: Int {
-        get { monthFilter.selectedMonthIndex }
-        set { monthFilter.selectedMonthIndex = newValue }
-    }
-
     func expensesByParent() -> [(parent: Category, subtotals: [(category: Category, total: Decimal)], total: Decimal)] {
         guard let categoryBasket else { return [] }
         let filtered = monthFilter.filteredExpenses(from: self.expenses)

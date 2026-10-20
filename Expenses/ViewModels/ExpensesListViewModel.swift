@@ -40,12 +40,6 @@ final class ExpensesListViewModel: MonthFilterable {
     var hasAnyExpenses: Bool {
         !(expenseBasket?.expenses.isEmpty ?? true)
     }
-
-    /// Months are filtered in memory from the shared basket, so changing month needs no fetch.
-    var selectedMonthIndex: Int {
-        get { monthFilter.selectedMonthIndex }
-        set { monthFilter.selectedMonthIndex = newValue }
-    }
     
     /// Whether the filter button should look active: a filter is set, or the sort isn't the default.
     var hasActiveFilters: Bool {

@@ -43,11 +43,6 @@ final class DailyChartViewModel: MonthFilterable {
         await baskets.loadIfNeeded()
     }
 
-    var selectedMonthIndex: Int {
-        get { monthFilter.selectedMonthIndex }
-        set { monthFilter.selectedMonthIndex = newValue }
-    }
-
     func daysInMonth() -> Int {
         let calendar = Calendar.current
         let date = monthFilter.selectedMonth()

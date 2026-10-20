@@ -14,8 +14,10 @@ protocol MonthFilterable: AnyObject {
 extension MonthFilterable {
     var monthOffsets: [Int] { monthFilter.monthOffsets }
 
-    func filteredExpenses(from allExpenses: [Expense]) -> [Expense] {
-        monthFilter.filteredExpenses(from: allExpenses)
+    /// The month chosen in `MonthCarouselView`. Months are filtered in memory from the shared
+    /// basket, so changing month needs no fetch.
+    var selectedMonthIndex: Int {
+        get { monthFilter.selectedMonthIndex }
+        set { monthFilter.selectedMonthIndex = newValue }
     }
-
 }
