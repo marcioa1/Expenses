@@ -13,24 +13,42 @@ struct DailyChartViewModelTests {
 
     // MARK: - Daily totals
 
-    @Test func dailyTotalsAreIdentifiedByDay() {
+    /// A view model on the current month, backed by in-memory baskets that load right away.
+    private func makeViewModel(expenses: [Expense]) async -> DailyChartViewModel {
         let vm = DailyChartViewModel()
-        let expenses = [Expense(id: 1, categoryID: 1, value: 10)]
+        await vm.configure(
+            with: CategoryBasket(categories: [Category(id: 1, name: "Food")]),
+            expenseBasket: ExpenseBasket(expenses: expenses)
+        )
+        return vm
+    }
 
-        let totals = vm.expensesByDay(from: expenses)
+    @Test func dailyTotalsAreIdentifiedByDay() async {
+        let vm = await makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10)])
+
+        let totals = vm.dailyTotals
 
         #expect(totals.map(\.id) == Array(1...vm.daysInMonth()))
         #expect(Set(totals.map(\.id)).count == totals.count)
     }
 
-    @Test func dailyTotalIDsAreStableAcrossCalls() {
-        let vm = DailyChartViewModel()
-        let expenses = [Expense(id: 1, categoryID: 1, value: 10)]
+    @Test func dailyTotalIDsAreStableAcrossCalls() async {
+        let vm = await makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10)])
 
-        let first = vm.expensesByDay(from: expenses).map(\.id)
-        let second = vm.expensesByDay(from: expenses).map(\.id)
+        #expect(vm.dailyTotals.map(\.id) == vm.dailyTotals.map(\.id))
+    }
 
-        #expect(first == second)
+    @Test func dailyTotalsSumTheDayAndApplyTheFilter() async {
+        let vm = await makeViewModel(expenses: [
+            Expense(id: 1, categoryID: 1, value: 10),
+            Expense(id: 2, categoryID: 1, value: 15, extraordinary: true),
+        ])
+        let today = Calendar.current.component(.day, from: .now)
+
+        #expect(vm.dailyTotals.first { $0.day == today }?.total == 25)
+
+        vm.filter.extra = .regular
+        #expect(vm.dailyTotals.first { $0.day == today }?.total == 10)
     }
 
     // MARK: - Loading state

@@ -58,7 +58,7 @@ struct DailyChartView: View {
     private var chartContent: some View {
         Spacer()
         Section {
-            Chart(viewModel.expensesByDay(from: viewModel.expenses)) { item in
+            Chart(viewModel.dailyTotals) { item in
                 BarMark(
                     x: .value("Day", item.day),
                     y: .value("Total", item.plotTotal)

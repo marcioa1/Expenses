@@ -30,7 +30,7 @@ final class DailyChartViewModel: MonthFilterable {
     var categories: [Category] {
         baskets?.categoryBasket.categories ?? []
     }
-    var expenses: [Expense] {
+    private var expenses: [Expense] {
         baskets?.expenseBasket.expenses ?? []
     }
     var loadingState: LoadingState {
@@ -49,8 +49,9 @@ final class DailyChartViewModel: MonthFilterable {
         return calendar.range(of: .day, in: .month, for: date)?.count ?? 30
     }
 
-    func expensesByDay(from allExpenses: [Expense]) -> [DailyTotal] {
-        let monthExpenses = monthFilter.filteredExpenses(from: allExpenses)
+    /// One bar per day of the selected month, for the expenses matching `filter`.
+    var dailyTotals: [DailyTotal] {
+        let monthExpenses = monthFilter.filteredExpenses(from: expenses)
         let result = filter.apply(to: monthExpenses, categories: categories)
         let calendar = Calendar.current
 
