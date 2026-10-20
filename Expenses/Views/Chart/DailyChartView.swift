@@ -9,11 +9,26 @@ import SwiftUI
 import Charts
 
 struct DailyChartView: View {
+    /// The two ways the tab shows the month's daily totals.
+    private enum DisplayMode: CaseIterable {
+        case chart, calendar
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .chart: "Chart"
+            case .calendar: "Calendar"
+            }
+        }
+    }
+
     @Environment(CategoryBasket.self) private var categoryBasket
     @Environment(ExpenseBasket.self) private var expenseBasket
 
     @State private var viewModel = DailyChartViewModel()
     @State private var showingFilter = false
+    @State private var displayMode: DisplayMode = .chart
+    /// The calendar day whose expenses are shown in a sheet.
+    @State private var selectedDay: DailyTotal?
 
     /// Called when the user taps the logout button.
     var onLogout: () -> Void = {}
@@ -26,6 +41,15 @@ struct DailyChartView: View {
                     selectedMonthIndex: $viewModel.selectedMonthIndex
                 )
 
+                Picker("Display", selection: $displayMode) {
+                    ForEach(DisplayMode.allCases, id: \.self) { mode in
+                        Text(mode.title)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal)
+                .padding(.top, 8)
+
                 switch viewModel.loadingState {
                 case .loading:
                     ProgressView()
@@ -33,7 +57,14 @@ struct DailyChartView: View {
                 case .failed:
                     ErrorView()
                 case .success:
-                    chartContent
+                    switch displayMode {
+                    case .chart:
+                        chartContent
+                    case .calendar:
+                        DailyCalendarView(month: viewModel.calendarMonth) { day in
+                            selectedDay = day
+                        }
+                    }
                 }
             }
             .navigationTitle("Daily Spending")
@@ -48,6 +79,13 @@ struct DailyChartView: View {
                 filter: $viewModel.filter,
                 categories: viewModel.categories
             )
+            .sheet(item: $selectedDay) { day in
+                DayExpensesView(
+                    date: viewModel.date(ofDay: day.day),
+                    expenses: viewModel.expenses(onDay: day.day),
+                    category: viewModel.category(for:)
+                )
+            }
         }
         .task {
             await viewModel.configure(with: categoryBasket, expenseBasket: expenseBasket)
