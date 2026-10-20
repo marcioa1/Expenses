@@ -9,8 +9,10 @@ import Foundation
 
 @Observable
 final class SummaryViewModel: MonthFilterable {
-    private var categoryBasket: CategoryBasket?
-    private var expenseBasket: ExpenseBasket?
+    /// Shared stores, provided by the view via `configure`.
+    private var baskets: SharedBaskets?
+    private var categoryBasket: CategoryBasket? { baskets?.categoryBasket }
+    private var expenseBasket: ExpenseBasket? { baskets?.expenseBasket }
 
     var expenseToEdit: Expense?
     let monthFilter = MonthFilter()
@@ -30,10 +32,8 @@ final class SummaryViewModel: MonthFilterable {
         monthFilter.filteredExpenses(from: expenses)
     }
     
-    /// Derived from the shared baskets, so every tab agrees on whether the data is available.
     var loadingState: LoadingState {
-        guard let categoryBasket, let expenseBasket else { return .loading }
-        return .combined(categoryBasket.loadState, expenseBasket.loadState)
+        baskets?.loadingState ?? .loading
     }
 
     func category(for expense: Expense) -> Category? {
@@ -41,13 +41,10 @@ final class SummaryViewModel: MonthFilterable {
     }
 
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
-        self.categoryBasket = categoryBasket
-        self.expenseBasket = expenseBasket
-        // The baskets are shared by every tab and months are filtered in memory, so only the
-        // first call actually hits the server. Errors are reflected in each basket's `loadState`.
-        async let categories: Void? = try? categoryBasket.loadIfNeeded()
-        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
-        _ = await (categories, expenses)
+        let baskets = SharedBaskets(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+        self.baskets = baskets
+        // Months are filtered in memory, so changing month never needs another fetch.
+        await baskets.loadIfNeeded()
     }
 
     /// Months are filtered in memory from the shared basket, so changing month needs no fetch.

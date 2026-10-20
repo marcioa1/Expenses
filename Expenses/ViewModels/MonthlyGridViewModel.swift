@@ -12,22 +12,20 @@ import Observation
 final class MonthlyGridViewModel {
     private let calendar = Calendar.current
     let monthFilter = MonthFilter()
-    private var categoryBasket: CategoryBasket?
+    /// Shared stores, provided by the view via `configure`.
+    private var baskets: SharedBaskets?
     var categories: [Category] {
-        categoryBasket?.categories ?? []
+        baskets?.categoryBasket.categories ?? []
     }
-    private var expenseBasket: ExpenseBasket?
     /// Expenses within the months shown in the grid.
     var expenses: [Expense] {
-        guard let expenseBasket, let range = displayedRange else { return [] }
-        return expenseBasket.expenses(from: range.start, to: range.end)
+        guard let baskets, let range = displayedRange else { return [] }
+        return baskets.expenseBasket.expenses(from: range.start, to: range.end)
     }
     var filter = ExpenseFilter()
 
-    /// Derived from the shared baskets, so every tab agrees on whether the data is available.
     var loadingState: LoadingState {
-        guard let categoryBasket, let expenseBasket else { return .loading }
-        return .combined(categoryBasket.loadState, expenseBasket.loadState)
+        baskets?.loadingState ?? .loading
     }
 
     var filteredExpenses: [Expense] {
@@ -35,13 +33,10 @@ final class MonthlyGridViewModel {
     }
     
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
-        self.categoryBasket = categoryBasket
-        self.expenseBasket = expenseBasket
+        let baskets = SharedBaskets(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+        self.baskets = baskets
         // Loads once; the shared baskets keep the data up to date after each write.
-        // Errors are reflected in each basket's `loadState`, which `loadingState` reads.
-        async let categories: Void? = try? categoryBasket.loadIfNeeded()
-        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
-        _ = await (categories, expenses)
+        await baskets.loadIfNeeded()
     }
 
     /// From the first day of the oldest month to the last second of the newest month shown.

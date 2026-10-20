@@ -18,19 +18,18 @@ final class ExpensesListViewModel: MonthFilterable {
     /// Message of the last failed write (delete / update) or refresh, shown as an alert by the view.
     var errorMessage: String?
 
-    /// Derived from the shared baskets, so every tab agrees on whether the data is available.
+    /// Shared stores, provided by the view via `configure`.
+    private var baskets: SharedBaskets?
+    private var categoryBasket: CategoryBasket? { baskets?.categoryBasket }
+    private var expenseBasket: ExpenseBasket? { baskets?.expenseBasket }
+
     var loadingState: LoadingState {
-        guard let categoryBasket, let expenseBasket else { return .loading }
-        return .combined(categoryBasket.loadState, expenseBasket.loadState)
+        baskets?.loadingState ?? .loading
     }
 
-    /// Shared category store, provided by the view via `configure`.
-    var categoryBasket: CategoryBasket?
     var categories: [Category] {
         categoryBasket?.categories ?? []
     }
-    /// Shared expense store, provided by the view via `configure`.
-    var expenseBasket: ExpenseBasket?
     /// Expenses of the selected month, newest first.
     var expenses: [Expense] {
         expenseBasket?.expenses(from: monthFilter.monthStart(), to: monthFilter.monthEnd()) ?? []
@@ -98,12 +97,9 @@ final class ExpensesListViewModel: MonthFilterable {
     }
 
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
-        self.categoryBasket = categoryBasket
-        self.expenseBasket = expenseBasket
-        // Errors are reflected in each basket's `loadState`, which `loadingState` reads.
-        async let categories: Void? = try? categoryBasket.loadIfNeeded()
-        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
-        _ = await (categories, expenses)
+        let baskets = SharedBaskets(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+        self.baskets = baskets
+        await baskets.loadIfNeeded()
     }
 
     /// Searches every loaded expense, not only the selected month.

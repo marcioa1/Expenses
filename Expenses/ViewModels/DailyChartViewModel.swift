@@ -25,27 +25,22 @@ struct DailyTotal: Identifiable {
 final class DailyChartViewModel: MonthFilterable {
     let monthFilter = MonthFilter()
     var filter = ExpenseFilter()
-    private var categoryBasket: CategoryBasket?
+    /// Shared stores, provided by the view via `configure`.
+    private var baskets: SharedBaskets?
     var categories: [Category] {
-        categoryBasket?.categories ?? []
+        baskets?.categoryBasket.categories ?? []
     }
-    private var expenseBasket: ExpenseBasket?
     var expenses: [Expense] {
-        expenseBasket?.expenses ?? []
+        baskets?.expenseBasket.expenses ?? []
     }
-    /// Derived from the shared baskets, so every tab agrees on whether the data is available.
     var loadingState: LoadingState {
-        guard let categoryBasket, let expenseBasket else { return .loading }
-        return .combined(categoryBasket.loadState, expenseBasket.loadState)
+        baskets?.loadingState ?? .loading
     }
 
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
-        self.categoryBasket = categoryBasket
-        self.expenseBasket = expenseBasket
-        // Errors are reflected in each basket's `loadState`, which `loadingState` reads.
-        async let categories: Void? = try? categoryBasket.loadIfNeeded()
-        async let expenses: Void? = try? expenseBasket.loadIfNeeded()
-        _ = await (categories, expenses)
+        let baskets = SharedBaskets(categoryBasket: categoryBasket, expenseBasket: expenseBasket)
+        self.baskets = baskets
+        await baskets.loadIfNeeded()
     }
 
     var selectedMonthIndex: Int {

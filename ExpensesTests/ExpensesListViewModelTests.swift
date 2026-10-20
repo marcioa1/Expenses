@@ -16,17 +16,17 @@ struct ExpensesListViewModelTests {
 
     // MARK: - Helpers
 
-    private func makeViewModel(expenses: [Expense] = [], categories: [Category] = []) -> ExpensesListViewModel {
+    private func makeViewModel(expenses: [Expense] = [], categories: [Category] = []) async -> ExpensesListViewModel {
         let vm = ExpensesListViewModel()
-        vm.expenseBasket = ExpenseBasket(expenses: expenses)
-        vm.categoryBasket = CategoryBasket(categories: categories)
+        // Baskets without a repository load right away with the given data.
+        await vm.configure(with: CategoryBasket(categories: categories), expenseBasket: ExpenseBasket(expenses: expenses))
         return vm
     }
 
     // MARK: - latestCategory
 
     @Test func latestCategoryReturnsNilWhenNoExpenses() async {
-        let vm = makeViewModel()
+        let vm = await makeViewModel()
         let result = await vm.latestCategory(forLocationName: "Starbucks")
         #expect(result == nil)
     }
@@ -34,7 +34,7 @@ struct ExpensesListViewModelTests {
     @Test func latestCategoryReturnsMatch() async {
         let food = Category(id: 1, name: "Food")
         let expense = Expense(id: 1, categoryID: food.id, value: 10, locationName: "Starbucks")
-        let vm = makeViewModel(expenses: [expense], categories: [food])
+        let vm = await makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "Starbucks")
         #expect(result?.name == "Food")
@@ -45,7 +45,7 @@ struct ExpensesListViewModelTests {
         let transport = Category(id: 2, name: "Transport")
         let older = Expense(id: 1, categoryID: food.id, value: 10, datetime: .now.addingTimeInterval(-3600), locationName: "Airport")
         let newer = Expense(id: 2, categoryID: transport.id, value: 20, datetime: .now, locationName: "Airport")
-        let vm = makeViewModel(expenses: [older, newer], categories: [food, transport])
+        let vm = await makeViewModel(expenses: [older, newer], categories: [food, transport])
 
         let result = await vm.latestCategory(forLocationName: "Airport")
         #expect(result?.name == "Transport")
@@ -54,7 +54,7 @@ struct ExpensesListViewModelTests {
     @Test func latestCategoryReturnsNilWhenLocationNotFound() async {
         let food = Category(id: 1, name: "Food")
         let expense = Expense(id: 1, categoryID: food.id, value: 10, locationName: "Starbucks")
-        let vm = makeViewModel(expenses: [expense], categories: [food])
+        let vm = await makeViewModel(expenses: [expense], categories: [food])
 
         let result = await vm.latestCategory(forLocationName: "McDonald's")
         #expect(result == nil)
@@ -62,11 +62,11 @@ struct ExpensesListViewModelTests {
 
     // MARK: - Category filter
 
-    @Test func filterBySelectedCategoryIncludesSubcategories() {
+    @Test func filterBySelectedCategoryIncludesSubcategories() async {
         let food = Category(id: 1, name: "Food")
         let restaurants = Category(id: 3, name: "Restaurants", parentID: food.id)
         let transport = Category(id: 2, name: "Transport")
-        let vm = makeViewModel(
+        let vm = await makeViewModel(
             expenses: [
                 Expense(id: 1, categoryID: food.id, value: 10),
                 Expense(id: 2, categoryID: restaurants.id, value: 20),
@@ -128,24 +128,24 @@ struct ExpensesListViewModelTests {
 
     // MARK: - Empty states
 
-    @Test func noExpensesAtAll() {
-        let vm = makeViewModel()
+    @Test func noExpensesAtAll() async {
+        let vm = await makeViewModel()
 
         #expect(vm.expenses.isEmpty)
         #expect(vm.hasAnyExpenses == false)
     }
 
-    @Test func emptyMonthWithExpensesInOtherMonths() throws {
+    @Test func emptyMonthWithExpensesInOtherMonths() async throws {
         // The selected month defaults to the current one; this expense is two months earlier.
         let twoMonthsAgo = try #require(Calendar.current.date(byAdding: .month, value: -2, to: .now))
-        let vm = makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10, datetime: twoMonthsAgo)])
+        let vm = await makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10, datetime: twoMonthsAgo)])
 
         #expect(vm.expenses.isEmpty)
         #expect(vm.hasAnyExpenses)
     }
 
-    @Test func monthWithExpenses() {
-        let vm = makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10)])
+    @Test func monthWithExpenses() async {
+        let vm = await makeViewModel(expenses: [Expense(id: 1, categoryID: 1, value: 10)])
 
         #expect(!vm.expenses.isEmpty)
         #expect(vm.hasAnyExpenses)
