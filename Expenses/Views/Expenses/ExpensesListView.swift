@@ -88,8 +88,10 @@ struct ExpensesListView: View {
     
     @ViewBuilder
     private var expenseList: some View {
+        // Filtered and sorted once per render, then shared by the rows, delete and the empty state.
+        let rows = viewModel.filteredExpenses()
         List {
-            ForEach(viewModel.filteredExpenses()) { expense in
+            ForEach(rows) { expense in
                 ExpenseRowView(expense: expense, category: viewModel.category(for: expense))
                     .onTapGesture {
                         viewModel.expenseToEdit = expense
@@ -107,7 +109,7 @@ struct ExpensesListView: View {
                     }
             }
             .onDelete { offsets in
-                let rows = viewModel.filteredExpenses()
+                // `offsets` index the rows on screen, which are exactly `rows`.
                 Task { await viewModel.deleteExpenses(at: offsets, from: rows) }
             }
         }
@@ -129,7 +131,7 @@ struct ExpensesListView: View {
                     systemImage: "creditcard",
                     description: Text("Add your first expense to get started.")
                 )
-            } else if viewModel.filteredExpenses().isEmpty {
+            } else if rows.isEmpty {
                 // The month has expenses, but none match the category / extra filters.
                 ContentUnavailableView(
                     "No Matching Expenses",
