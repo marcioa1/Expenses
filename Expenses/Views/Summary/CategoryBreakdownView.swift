@@ -8,24 +8,21 @@
 import SwiftUI
 
 struct CategoryBreakdownView: View {
-    let expensesByParent: [(parent: Category, subtotals: [(category: Category, total: Decimal)], total: Decimal)]
+    let groups: [CategoryGroup]
     let totalAmount: Decimal
     let currencyCode: String
 
     var body: some View {
         Section("By Category") {
-            if expensesByParent.isEmpty {
+            if groups.isEmpty {
                 Text("No expenses in this period.")
                     .foregroundStyle(.secondary)
             } else {
-                ForEach(expensesByParent, id: \.parent.id) { group in
-                    // Expenses logged directly on the parent show up as a subtotal for the parent itself,
-                    // so only offer a disclosure when at least one real child category has expenses.
-                    let hasChildren = group.subtotals.contains { $0.category.id != group.parent.id }
+                ForEach(groups) { group in
                     Group {
-                        if hasChildren {
+                        if group.hasChildren {
                             DisclosureGroup {
-                                ForEach(group.subtotals, id: \.category.id) { item in
+                                ForEach(group.subtotals) { item in
                                     SubcategoryRow(category: item.category, total: item.total, currencyCode: currencyCode)
                                 }
                             } label: {

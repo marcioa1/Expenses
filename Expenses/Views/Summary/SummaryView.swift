@@ -60,7 +60,7 @@ struct SummaryView: View {
     private var successContent: some View {
         List {
             CategoryBreakdownView(
-                expensesByParent: viewModel.expensesByParent(),
+                groups: viewModel.categoryGroups,
                 totalAmount: viewModel.totalAmount,
                 currencyCode: CurrencyHelper.code
             )
