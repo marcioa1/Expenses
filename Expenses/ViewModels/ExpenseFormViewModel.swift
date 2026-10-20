@@ -40,20 +40,17 @@ final class ExpenseFormViewModel {
     }
 
     func configure(with categoryBasket: CategoryBasket, expenseBasket: ExpenseBasket) async {
-        self.expenseBasket = expenseBasket
-        await configure(with: categoryBasket)
-        if !isEditing {
-            // Expenses are needed to suggest a category for the current location.
-            try? await expenseBasket.loadIfNeeded()
-            await resolveLocation()
-        }
-    }
-
-    private func configure(with categoryBasket: CategoryBasket) async {
         self.categoryBasket = categoryBasket
+        self.expenseBasket = expenseBasket
+
         try? await categoryBasket.loadIfNeeded()
         if let expense {
+            // Editing: show the expense's category once categories are available.
             selectedCategory = categoryBasket.category(withID: expense.categoryID)
+        } else {
+            // New expense: expenses are needed to suggest a category for the current location.
+            try? await expenseBasket.loadIfNeeded()
+            await resolveLocation()
         }
     }
 
