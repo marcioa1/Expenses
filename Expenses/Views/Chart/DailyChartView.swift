@@ -115,7 +115,7 @@ struct DailyChartView: View {
                     AxisGridLine()
                 }
             }
-            .frame(height: 420)
+            .frame(maxHeight: 420)
             .padding(.vertical, 8)
         }
     }
