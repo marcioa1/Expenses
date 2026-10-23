@@ -136,6 +136,14 @@ final class ExpenseFormViewModel {
         }
     }
 
+    /// Removes the location, including the GPS coordinates attached to it,
+    /// so a wrong suggestion isn't saved with the expense.
+    func clearLocation() {
+        locationName = ""
+        latitude = nil
+        longitude = nil
+    }
+
     /// Pre-fills the location (and a suggested category) from where the user is.
     ///
     /// The GPS fix can take a few seconds, and the user may fill the form in the meantime.
