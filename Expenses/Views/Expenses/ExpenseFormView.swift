@@ -43,7 +43,17 @@ struct ExpenseFormView: View {
 
                 Section("Details / Location") {
                     TextField("Description (optional)", text: $viewModel.details)
-                    TextField("Location (optional)", text: $viewModel.locationName)
+                    HStack {
+                        TextField("Location (optional)", text: $viewModel.locationName)
+                        if !viewModel.locationName.isEmpty {
+                            Button("Clear Location", systemImage: "xmark.circle.fill") {
+                                viewModel.clearLocation()
+                            }
+                            .labelStyle(.iconOnly)
+                            .foregroundStyle(.secondary)
+                            .buttonStyle(.borderless)
+                        }
+                    }
                 }
 
                 Section("Details") {
